@@ -38,24 +38,24 @@ HEADERS = {
 PROGRAMS: dict[str, List[str]] = {
     "Smiles": [
         "https://www.melhoresdestinos.com.br/tag/smiles/feed",
-        "https://feeds.feedburner.com/PromocoesSmiles"      # novo
+        "https://feeds.feedburner.com/PromocoesSmiles",
     ],
     "LATAM Pass": [
         "https://www.melhoresdestinos.com.br/tag/latam-pass/feed",
-        "https://feeds.feedburner.com/PromocoesLatamPass"   # novo
+        "https://feeds.feedburner.com/PromocoesLatamPass",
     ],
     "TudoAzul": [
         "https://www.melhoresdestinos.com.br/tag/tudoazul/feed",
-        "https://feeds.feedburner.com/PromocoesTudoAzul"    # novo
+        "https://feeds.feedburner.com/PromocoesTudoAzul",
     ],
     "Melhores Destinos – bônus": [
-        "https://www.melhoresdestinos.com.br/tag/transferencia-bonus/feed"
+        "https://www.melhoresdestinos.com.br/tag/transferencia-bonus/feed",
     ],
     "Promo Milhas": [
-        "https://promomilhas.com.br/feed/"                  # novo
+        "https://promomilhas.com.br/feed/",
     ],
     "Passageiro de Primeira": [
-        "https://passageirodeprimeira.com/feed/"
+        "https://passageirodeprimeira.com/feed/",
     ],
 }
 
