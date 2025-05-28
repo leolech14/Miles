@@ -12,7 +12,9 @@ jobs:
         with:
           python-version: '3.x'
       - run: pip install requests beautifulsoup4 python-telegram-bot==13.15
-      - env:
+      - name: Run bonus alert bot
+        run: python bonus_alert_bot.py
+        env:
          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-         run: python $GITHUB_WORKSPACE/bonus_alert_bot.py
+        working-directory: ${{ github.workspace }}
