@@ -1,41 +1,41 @@
 #!/usr/bin/env python3
 """
-Bonus Alert Bot • v2.3  (28 May 2025)
+Bonus Alert Bot · v2.4  (28 May 2025)
 ======================================
-Monitora promoções de **bônus de transferência de pontos** (Livelo, Esfera, Iupp → Smiles, LATAM Pass, TudoAzul, etc.)
-e envia alertas via Telegram.
+Varre feeds RSS e páginas proxy‑cache de blogs/programas de milhas para achar
+promoções de **bônus de transferência** de pontos e avisa via Telegram.
 
-Principais recursos
--------------------
-• Fontes RSS confiáveis + fallback proxy (AllOrigins) se o fetch direto falhar.
-• Procura por padrões “NN %” no **título + summary** do feed.
-• Envia alerta formatado:  ➜ "📣 120 % • Smiles \n <link>".
-• Evita duplicados (hash por URL+percentual).
-• DEBUG_ALWAYS força um alerta por execução para teste.
+Principais mudanças v2.4
+------------------------
+• Regex inteligente exige "% + bônus + transfer" (menos ruído).
+• `MIN_BONUS` default 80 % (pode alterar via env).
+• `DEBUG_ALWAYS` desligado por padrão – definir DEBUG_ALWAYS=1 p/ testes.
+• Cache `seen.json` evita alertas duplicados entre execuções.
+• Mensagem condensada: "📣 120% · Smiles → link".
 
-Como executar
--------------
-$ export TELEGRAM_BOT_TOKEN="…"
-$ export TELEGRAM_CHAT_ID="…"
-$ python bonus_alert_bot.py
+Uso local
+---------
+TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID devem estar em variáveis de ambiente.
+Opcional:
+  MIN_BONUS      (int, default 80)
+  DEBUG_ALWAYS   ("1"/"true" para sempre avisar)
 
-Dependências: requests, feedparser.
-No GitHub Actions:
-  - run: pip install requests feedparser
-
+Dependências: requests, feedparser, beautifulsoup4.
 """
 from __future__ import annotations
-import os, re, time, hashlib, json, requests, feedparser, textwrap
-from typing import List, Tuple, Set
+import os, re, json, time, datetime as dt, hashlib, warnings
+import requests, feedparser
+from bs4 import BeautifulSoup
 
-# ========= Config =========
-MIN_BONUS   = int(os.getenv("MIN_BONUS", 0))      # % mínimo p/ alertar
-DEBUG_ALWAYS= os.getenv("DEBUG_ALWAYS", "True") == "True"
-USE_PROXY   = os.getenv("USE_PROXY", "True") == "True"
-HEADERS     = {"User-Agent": "Mozilla/5.0 BonusBot"}
-TIMEOUT     = 20
+# ---------------- Config -----------------
+MIN_BONUS: int = int(os.getenv("MIN_BONUS", 80))
+DEBUG_ALWAYS: bool = os.getenv("DEBUG_ALWAYS", "0").lower() in {"1", "true", "yes"}
+TIMEOUT = 25
+HEADERS = {"User-Agent": "Mozilla/5.0 (BonusBot)"}
+CACHE_FILE = "seen.json"
 
-PROGRAMS: dict[str, List[str]] = {
+# fontes RSS (preferência) + fallback feedburner
+PROGRAMS: dict[str, list[str]] = {
     "Smiles": [
         "https://www.melhoresdestinos.com.br/tag/smiles/feed",
         "https://feeds.feedburner.com/promocoes-smiles",
@@ -48,86 +48,110 @@ PROGRAMS: dict[str, List[str]] = {
         "https://www.melhoresdestinos.com.br/tag/tudoazul/feed",
         "https://feeds.feedburner.com/promocoes-tudoazul",
     ],
-    "Blog – MD Transferência": [
+    "Blog – MD bônus": [
         "https://www.melhoresdestinos.com.br/tag/transferencia-bonus/feed",
     ],
     "Blog – Passageiro de Primeira": [
         "https://passageirodeprimeira.com/feed/",
     ],
+    "Promo Milhas": [
+        "https://promomilhas.com.br/feed/",
+    ],
 }
+
 PROXY_TPL = [
     "https://api.allorigins.win/raw?url={u}",
 ]
 
-# ========= Core =========
+BONUS_RE = re.compile(r"(?P<pct>\d{2,3})\s*%[^%]*?\b(bônus|bonus)[^%]*?\btransf", re.I)
 
-def log(msg: str):
-    print(msg, flush=True)
+# --------- Telegram -------------
+TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
+TG_URL = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
+
+def send_telegram(msg: str) -> None:
+    if not TG_TOKEN or not TG_CHAT:
+        print("[TG] skipping – token/chat not set")
+        return
+    payload = {"chat_id": TG_CHAT, "text": msg, "disable_web_page_preview": True}
+    r = requests.post(TG_URL, data=payload, timeout=15)
+    print("[TG]", r.status_code, r.text[:120])
+    r.raise_for_status()
+
+# ---------- Cache de alertas ------------
+try:
+    with open(CACHE_FILE) as f:
+        SEEN: set[str] = set(json.load(f))
+except Exception:
+    SEEN = set()
+
+def save_cache():
+    with open(CACHE_FILE, "w") as f:
+        json.dump(list(SEEN), f)
+
+# ---------- Fetch helpers --------------
 
 def fetch_url(url: str) -> str | None:
-    """Tenta baixar URL direto; se falhar e USE_PROXY, tenta via proxy."""
-    # direto
     try:
-        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-        r.raise_for_status()
-        return r.text
+        return requests.get(url, headers=HEADERS, timeout=TIMEOUT).text
     except Exception as e:
-        log(f"[WARN] direto falhou {url} → {e}")
-    # proxy
-    if USE_PROXY:
+        print(f"[WARN] direto falhou {url} → {e}")
         for tpl in PROXY_TPL:
-            py_url = tpl.format(u=url)
+            purl = tpl.format(u=url)
             try:
-                r = requests.get(py_url, headers=HEADERS, timeout=TIMEOUT)
-                r.raise_for_status()
-                log(f"[INFO] via proxy OK → {py_url[:60]}…")
-                return r.text
-            except Exception as e:
-                log(f"[WARN] proxy falhou {py_url[:60]}… → {e}")
-    return None
+                html = requests.get(purl, headers=HEADERS, timeout=TIMEOUT).text
+                print(f"[INFO] via proxy OK → {purl[:60]}…")
+                return html
+            except Exception as pe:
+                print(f"[WARN] proxy falhou {purl[:60]}… → {pe}")
+        return None
 
-def parse_feed(source: str, html: str) -> List[Tuple[int, str]]:
-    """Retorna lista de (percentual, link)."""
-    out: List[Tuple[int,str]] = []
+# ---------- Core --------------
+
+def parse_feed(src: str, html: str):
     feed = feedparser.parse(html)
     for entry in feed.entries:
-        txt = (entry.title + " " + entry.get("summary", ""))[:400]
-        m = re.search(r"(\d{2,3})\s?%", txt)
+        txt = f"{entry.get('title','')} {entry.get('summary','')[:300]}"
+        m = BONUS_RE.search(txt)
         if m:
-            pct = int(m.group(1))
-            if pct >= MIN_BONUS:
-                out.append((pct, entry.link))
-    return out
-
-def send_telegram(msg: str):
-    token = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat  = os.environ["TELEGRAM_CHAT_ID"]
-    url   = f"https://api.telegram.org/bot{token}/sendMessage"
-    r = requests.post(url, data={"chat_id": chat, "text": msg, "disable_web_page_preview": True}, timeout=15)
-    log(f"[TG] {r.status_code} {r.text[:80]}")
-    if not r.ok:
-        r.raise_for_status()
-
-# ========= Runner =========
-log(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
-
-duplicates: Set[str] = set()
-start = time.time()
-
-def hash_key(source: str, pct: int, link: str) -> str:
-    return hashlib.md5(f"{source}|{pct}|{link}".encode()).hexdigest()
-
-for src, urls in PROGRAMS.items():
-    for u in urls:
-        html = fetch_url(u)
-        if not html:
-            continue
-        for pct, link in parse_feed(src, html):
-            h = hash_key(src, pct, link)
-            if h in duplicates:
-                continue
-            duplicates.add(h)
+            pct = int(m.group("pct"))
             if pct >= MIN_BONUS or DEBUG_ALWAYS:
-                send_telegram(f"📣 {pct}% · {src}\n{link}")
+                link = entry.get("link") or "(sem link)"
+                sig = f"{pct}|{link.split('?')[0]}"
+                if sig in SEEN:
+                    continue
+                SEEN.add(sig)
+                msg = f"📣 {pct}% · {src}\n{link}"
+                send_telegram(msg)
 
-log(f"[INFO] Duration {round(time.time()-start,1)}s")
+
+def main():
+    print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
+    for src, urls in PROGRAMS.items():
+        for url in urls:
+            html = fetch_url(url)
+            if not html:
+                continue
+            if url.endswith(".rss") or url.endswith("/feed") or "feed" in url:
+                parse_feed(src, html)
+            else:
+                # Fallback: extrair % no HTML bruto
+                soup = BeautifulSoup(html, "html.parser")
+                text = soup.get_text(" ", strip=True)[:500]
+                m = BONUS_RE.search(text)
+                if m:
+                    pct = int(m.group("pct"))
+                    if pct >= MIN_BONUS or DEBUG_ALWAYS:
+                        sig = f"{pct}|{url}"
+                        if sig in SEEN:
+                            continue
+                        SEEN.add(sig)
+                        msg = f"📣 {pct}% · {src} → abrir"
+                        send_telegram(msg)
+            time.sleep(0.5)  # educado
+    save_cache()
+    print("[INFO] Varredura concluída.")
+
+if __name__ == "__main__":
+    main()
