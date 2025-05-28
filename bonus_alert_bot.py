@@ -1,151 +1,163 @@
 #!/usr/bin/env python3
 """
-Bonus Alert Bot • v2.4.1  (29 May 2025)
-=======================================
-Detecta promoções de **bônus de transferência** de pontos e avisa no Telegram.
-Agora reconhece também textos que anunciem bônus como “em **dobro**”, “**2x**” etc.
+Bonus Alert Bot • v2.5  (29 May 2025)
+======================================
+> *Modo de teste* — roda a cada 2 h e SEMPRE envia um ping (DEBUG_ALWAYS = True)
+> assim validamos entrega e parsing. Ajuste depois para produção.
 
-Principais parâmetros ------------------------------------------------------
-MIN_BONUS      = 80     # % mínimo. Ignorado se encontrar "dobro/2x".
-DEBUG_ALWAYS   = False  # True ➜ envia ping mesmo sem bônus.
-
-Como funciona --------------------------------------------------------------
-1. Lê RSS/HTML das URLs em PROGRAMS.
-2. Para cada item → `title + summary` (≤300 chars).
-3. Detecta promo se:
-   • Regex pct/keyword encontra % **e** "bônus … transfer*"; ou
-   • Regex FOBRO encontra "dobro|2x" **e** palavra‑raiz "transfer".
-4. Se pct < MIN_BONUS → descarta.
-5. Evita duplicatas via cache `seen.json`.
-6. Envia mensagem condensada e loga resultado do Telegram.
+• Fontes reformuladas → feeds estáveis FeedBurner/WordPress + oficiais:
+    – Smiles, LATAM Pass, TudoAzul (feeds Melhores Destinos segmentados)
+    – Feeds oficiais Smiles & LATAM Pass
+    – MD tag "transferencia-bonus", Passageiro de Primeira, Promomilhas
+• Regex inteligente → detecta "NN % bônus transferência" ou "☑ dobro/2x transfer".
+• Cache visto em `seen.json` evita duplicatas.
 
 """
-import os, re, json, time, warnings, hashlib, requests, feedparser
-from bs4 import BeautifulSoup
+from __future__ import annotations
+import os, re, json, time, hashlib, warnings, requests, feedparser
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
-# ======================= Config =======================
-MIN_BONUS      = int(os.getenv("MIN_BONUS", 80))
-DEBUG_ALWAYS   = os.getenv("DEBUG_ALWAYS", "False").lower() == "true"
-CACHE_FILE     = "seen.json"
+# ------------- CONFIGURAÇÃO PRINCIPAL -----------------
+MIN_BONUS      = int(os.getenv("MIN_BONUS", 80))   # exige 80 %+ (ignorado se dobro)
+DEBUG_ALWAYS   = os.getenv("DEBUG_ALWAYS", "True") == "True"  # envia ping teste
 TIMEOUT        = 25
-HEADERS        = {"User-Agent": "Mozilla/5.0 BonusAlertBot"}
 
 PROGRAMS: dict[str, list[str]] = {
     "Smiles": [
-        "https://www.melhoresdestinos.com.br/tag/smiles/feed",
-        "https://feeds.feedburner.com/promocoes-smiles",
+        "https://feeds.feedburner.com/melhoresdestinos-smiles",
+        "https://www.smiles.com.br/feed",
     ],
     "LATAM Pass": [
-        "https://www.melhoresdestinos.com.br/tag/latam-pass/feed",
-        "https://feeds.feedburner.com/promocoes-latampass",
+        "https://feeds.feedburner.com/melhoresdestinos-latampass",
+        "https://www.latam.com/latam-pass/feed",
     ],
     "TudoAzul": [
-        "https://www.melhoresdestinos.com.br/tag/tudoazul/feed",
-        "https://feeds.feedburner.com/promocoes-tudoazul",
+        "https://feeds.feedburner.com/melhoresdestinos-tudoazul",
     ],
     "MD – Transferência bônus": [
         "https://www.melhoresdestinos.com.br/tag/transferencia-bonus/feed",
     ],
-    "Promo Milhas": [
-        "https://promomilhas.com.br/feed/",
-    ],
     "Passageiro de Primeira": [
         "https://passageirodeprimeira.com/feed/",
     ],
+    "Promo Milhas": [
+        "https://promomilhas.com.br/feed/",
+    ],
 }
 
+HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
 PROXY_TPL = [
     "https://api.allorigins.win/raw?url={u}",
+    "https://r.jina.ai/http://{u}",
 ]
 
-# ======================= Utilidades ===================
-PERC_RE = re.compile(r"(?P<pct>\d{2,3})\s*%", re.I)
-FULL_RE = re.compile(r"(?P<pct>\d{2,3})\s*%.*?(bônus|bonus).*?transf(er|ê)nci", re.I)
-DOBRO_RE = re.compile(r"\b(dobro|dobrar|duplicar|2x)\b.*?transf", re.I)
+BONUS_RE = re.compile(r"(?P<pct>\d{2,3})\s*%.*?(bônus|bonus).*?transf", re.I)
+DOBRO_RE = re.compile(r"\b(dobro|dobrar|2x|duplicar)\b.*?transf", re.I)
 
-def load_cache():
-    try:
-        with open(CACHE_FILE, "r") as f:
-            return set(json.load(f))
-    except FileNotFoundError:
-        return set()
+# ----------------- UTIL ----------------------------
 
-def save_cache(cache):
-    with open(CACHE_FILE, "w") as f:
-        json.dump(list(cache), f)
-
-seen = load_cache()
-
-def hash_sig(text: str) -> str:
-    return hashlib.md5(text.encode()).hexdigest()
-
-# ======================= Fonte → HTML/RSS =============
-
-def fetch_url(url: str) -> str | None:
+def fetch(url: str) -> str | None:
     try:
         return requests.get(url, headers=HEADERS, timeout=TIMEOUT).text
     except Exception:
         for tpl in PROXY_TPL:
+            prox = tpl.format(u=url)
             try:
-                proxy_url = tpl.format(u=url)
-                return requests.get(proxy_url, headers=HEADERS, timeout=TIMEOUT).text
+                return requests.get(prox, headers=HEADERS, timeout=TIMEOUT).text
             except Exception:
                 continue
     return None
 
-# ======================= Parsing ======================
-
-def analyse_text(src: str, text: str, link: str):
-    m = FULL_RE.search(text)
-    if m:
-        pct = int(m.group("pct"))
+def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int,str,str]]):
+    raw = fetch(url)
+    if not raw:
+        return
+    if url.endswith((".rss", ".xml")) or raw.strip().startswith("<?xml"):
+        feed = feedparser.parse(raw)
+        entries = feed.entries
+        for e in entries:
+            text = (e.title + " " + e.get("summary", ""))[:400]
+            link = e.link
+            handle_text(name, text, link, seen, alerts)
     else:
-        if DOBRO_RE.search(text):
-            pct = 100  # padrão para "dobro/2x"
-        else:
-            return
+        soup = BeautifulSoup(raw, "html.parser")
+        for item in soup.find_all(["item", "article", "entry", "h2", "h3"]):
+            text = item.get_text(" ")[:400]
+            link = getattr(item.find("a"), "href", url)
+            handle_text(name, text, link, seen, alerts)
+
+def handle_text(src: str, text: str, link: str, seen: set[str], alerts: list[tuple[int,str,str]]):
+    m = BONUS_RE.search(text)
+    pct = int(m.group("pct")) if m else None
+    if not pct and DOBRO_RE.search(text):
+        pct = 100
+    if pct is None:
+        return
     if pct < MIN_BONUS and not DEBUG_ALWAYS:
         return
-    sig = hash_sig(f"{pct}|{link}")
+    sig = f"{pct}|{link.split('?')[0]}"
     if sig in seen:
         return
+    alerts.append((pct, src, link))
     seen.add(sig)
-    msg = f"📣 {pct}% · {src} → {link}"
-    send_telegram(msg)
 
-# ======================= Telegram =====================
+# ----------------- TELEGRAM ------------------------
 
 def send_telegram(msg: str):
-    tok  = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat = os.environ["TELEGRAM_CHAT_ID"]
-    url  = f"https://api.telegram.org/bot{tok}/sendMessage"
-    r = requests.post(url, data={"chat_id": chat, "text": msg, "disable_web_page_preview": True}, timeout=15)
+    token = os.environ["TELEGRAM_BOT_TOKEN"]
+    chat  = os.environ["TELEGRAM_CHAT_ID"]
+    url   = f"https://api.telegram.org/bot{token}/sendMessage"
+    r = requests.post(url, data={
+        "chat_id": chat,
+        "text": msg,
+        "disable_web_page_preview": True,
+    }, timeout=15)
     print("[TG]", r.status_code, r.text[:120])
     r.raise_for_status()
 
-# ======================= Main =========================
+# ----------------- MAIN ----------------------------
 
-def run():
+def main():
+    start = time.time()
+    seen = load_seen()
+    alerts: list[tuple[int,str,str]] = []
+
+    print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
     for src, urls in PROGRAMS.items():
-        for u in urls:
-            raw = fetch_url(u)
-            if not raw:
-                continue
-            if u.endswith((".rss", ".xml")):
-                feed = feedparser.parse(raw)
-                for e in feed.entries:
-                    link = e.get("link")
-                    text = (e.get("title", "") + " " + e.get("summary", ""))[:300]
-                    analyse_text(src, text, link)
-            else:
-                soup = BeautifulSoup(raw, "html.parser")
-                title = soup.title.text if soup.title else ""
-                analyse_text(src, title + " " + soup.get_text(" ")[:300], u)
+        for url in urls:
+            parse_feed(src, url, seen, alerts)
 
-    save_cache(seen)
+    if DEBUG_ALWAYS and not alerts:
+        alerts.append((0, "Debug", "https://example.com"))
+
+    for pct, src, link in alerts:
+        msg = f"📣 {pct} % · {src}\n{link}"
+        try:
+            send_telegram(msg)
+        except Exception as e:
+            print("[ERROR] Telegram", e)
+
+    save_seen(seen)
+    print(f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}")
+
+# ---------------- PERSISTÊNCIA ---------------------
+
+SEEN_PATH = "seen.json"
+
+def load_seen() -> set[str]:
+    if os.path.exists(SEEN_PATH):
+        try:
+            return set(json.load(open(SEEN_PATH)))
+        except Exception:
+            return set()
+    return set()
+
+def save_seen(seen: set[str]):
+    try:
+        json.dump(list(seen), open(SEEN_PATH, "w"))
+    except Exception:
+        pass
 
 if __name__ == "__main__":
-    print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
-    t0 = time.time()
-    run()
-    print(f"[INFO] Duration {time.time()-t0:.1f}s")
+    main()
