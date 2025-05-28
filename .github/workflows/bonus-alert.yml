@@ -1,29 +1,29 @@
 name: bonus-alert
 
 on:
-  schedule:
-    - cron: '0 * * * *' # every hour on the hour, UTC
   workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'  # runs every hour (customize as needed)
 
 jobs:
-  scan:
+  run-bonus-alert:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
       - name: Install dependencies
         run: |
-          pip install requests beautifulsoup4 python-telegram-bot
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 feedparser python-telegram-bot
 
-      - name: Run bonus alert bot
+      - name: Run Bonus Alert Bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python bonus_alert_bot.py
-        working-directory: ${{ github.workspace }}
