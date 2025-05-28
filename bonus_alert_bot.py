@@ -113,14 +113,20 @@ def bonus_in_rss(url: str) -> Tuple[int|None, str|None]:
     return None, None
 
 
-def send_telegram(text: str):
-    resp = requests.post(
-        f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-        data={"chat_id": CHAT, "text": text, "disable_web_page_preview": True},
+def send_telegram(msg: str):
+    payload = {
+        "chat_id": os.environ["TELEGRAM_CHAT_ID"],
+        "text": msg,
+        "disable_web_page_preview": True,
+    }
+    r = requests.post(
+        f"https://api.telegram.org/bot{os.environ['TELEGRAM_BOT_TOKEN']}/sendMessage",
+        data=payload,
         timeout=15,
     )
+    print("[TG]", r.status_code, r.text)
     try:
-        resp.raise_for_status()
+        r.raise_for_status()
     except Exception as e:
         print(f"[WARN] Telegram send falhou → {e}")
 
