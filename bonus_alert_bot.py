@@ -16,9 +16,9 @@ import datetime as dt
 from bs4 import BeautifulSoup
 
 PROGRAMS = {
-    "Smiles": "https://www.smiles.com.br/promocoes/pontos-bancos",
-    "LATAM": "https://www.latampass.latam.com/pt_br/promocoes/bancos",
-    "TudoAzul": "https://tudoazul.voeazul.com.br/promocoes",
+    "Smiles": "https://www.smiles.com.br/promocoes/bancos",
+    "LATAM":  "https://www.latam.com/latam-pass/pt_br/novidades/promocoes",
+    "TudoAzul": "https://tudoazul.voeazul.com.br/portal/pt/ofertas"
 }
 BONUS_RE = re.compile(r"(1[01]\d|\d{3}|100)\s*%", re.I)  # 100%+
 MIN_BONUS = 100
