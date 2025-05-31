@@ -23,28 +23,24 @@ MIN_BONUS      = int(os.getenv("MIN_BONUS", 80))   # exige 80 %+ (ignorado se d
 DEBUG_ALWAYS   = os.getenv("DEBUG_ALWAYS", "True") == "True"  # envia ping teste
 TIMEOUT        = 25
 
-PROGRAMS: dict[str, list[str]] = {
+
+PROGRAMS = {
+    "Passageiro de Primeira": [
+        "https://passageirodeprimeira.com/feed/"
+    ],
     "Smiles": [
         "https://feeds.feedburner.com/melhoresdestinos-smiles",
-        "https://www.smiles.com.br/feed",
+        "https://www.smiles.com.br/feed"
     ],
     "LATAM Pass": [
         "https://feeds.feedburner.com/melhoresdestinos-latampass",
-        "https://www.latam.com/latam-pass/feed",
+        "https://www.latam.com/latam-pass/feed"
     ],
     "TudoAzul": [
-        "https://feeds.feedburner.com/melhoresdestinos-tudoazul",
-    ],
-    "MD – Transferência bônus": [
-        "https://www.melhoresdestinos.com.br/tag/transferencia-bonus/feed",
-    ],
-    "Passageiro de Primeira": [
-        "https://passageirodeprimeira.com/feed/",
-    ],
-    "Promo Milhas": [
-        "https://promomilhas.com.br/feed/",
-    ],
+        "https://feeds.feedburner.com/melhoresdestinos-tudoazul"
+    ]
 }
+
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
 PROXY_TPL = [
