@@ -26,6 +26,10 @@ The script checks these sources for promotions:
 - Smiles (including Gol promotions)
 - LATAM Pass
 - TudoAzul
+- Promoção Aérea
+- Pontos pra Voar
+- Melhores Destinos (tag "transferencia-bonus")
+- Promomilhas
 
 You can modify `PROGRAMS` in `bonus_alert_bot.py` to add or remove feeds.
 

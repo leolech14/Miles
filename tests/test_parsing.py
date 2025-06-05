@@ -19,3 +19,13 @@ def test_handle_text_dobro_triggers_default():
     text = "promo dobrar seus pontos na transferência"
     bot.handle_text("Test", text, "https://example.com/2", seen, alerts)
     assert alerts and alerts[0][0] == 100
+
+
+def test_programs_include_new_sources():
+    required = {
+        "Promoção Aérea",
+        "Pontos pra Voar",
+        "Melhores Destinos",
+        "Promomilhas",
+    }
+    assert required.issubset(bot.PROGRAMS.keys())

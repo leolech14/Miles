@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bonus Alert Bot • v2.5  (29 May 2025)
+Bonus Alert Bot • v2.6  (05 Jun 2025)
 ======================================
 > *Modo de teste* — roda a cada 2 h e SEMPRE envia um ping (DEBUG_ALWAYS = True)
 > assim validamos entrega e parsing. Ajuste depois para produção.
@@ -8,40 +8,52 @@ Bonus Alert Bot • v2.5  (29 May 2025)
 • Fontes reformuladas → feeds estáveis FeedBurner/WordPress + oficiais:
     – Smiles, LATAM Pass, TudoAzul (feeds Melhores Destinos segmentados)
     – Feeds oficiais Smiles & LATAM Pass
-    – MD tag "transferencia-bonus", Passageiro de Primeira, Promomilhas
+    – MD tag "transferencia-bonus", Passageiro de Primeira e novos canais
+      Promoção Aérea, Pontos pra Voar e Promomilhas
 • Regex inteligente → detecta "NN % bônus transferência" ou "☑ dobro/2x transfer".
 • Cache visto em `seen.json` evita duplicatas.
 
 """
 from __future__ import annotations
-import os, re, json, time, hashlib, warnings, requests, feedparser
+import os
+import re
+import json
+import time
+import warnings
+import requests
+import feedparser
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 # ------------- CONFIGURAÇÃO PRINCIPAL -----------------
-MIN_BONUS      = int(os.getenv("MIN_BONUS", 100))   # exige 100 % ou mais (ignorado se dobro)
-DEBUG_ALWAYS   = os.getenv("DEBUG_ALWAYS", "True") == "True"  # envia ping teste
-TIMEOUT        = 25
+MIN_BONUS = int(os.getenv("MIN_BONUS", 100))  # exige 100 % ou mais (ignorado se dobro)
+DEBUG_ALWAYS = os.getenv("DEBUG_ALWAYS", "True") == "True"  # envia ping teste
+TIMEOUT = 25
 
 
 PROGRAMS = {
-    "Passageiro de Primeira": [
-        "https://passageirodeprimeira.com/feed/"
-    ],
+    "Passageiro de Primeira": ["https://passageirodeprimeira.com/feed/"],
     "Smiles": [
         "https://feeds.feedburner.com/melhoresdestinos-smiles",
         "https://www.smiles.com.br/feed",
-        "https://blog.smiles.com.br/feed/"
+        "https://blog.smiles.com.br/feed/",
     ],
     "LATAM Pass": [
         "https://feeds.feedburner.com/melhoresdestinos-latampass",
         "https://www.latam.com/latam-pass/feed",
-        "https://www.latam.com/latam-pass/promocoes/feed"
+        "https://www.latam.com/latam-pass/promocoes/feed",
     ],
     "TudoAzul": [
         "https://feeds.feedburner.com/melhoresdestinos-tudoazul",
-        "https://blog.voeazul.com.br/feed/"
-    ]
+        "https://blog.voeazul.com.br/feed/",
+    ],
+    "Promoção Aérea": ["https://promocaoaerea.com.br/feed/"],
+    "Pontos pra Voar": ["https://pontospravoar.com/feed/"],
+    "Melhores Destinos": [
+        "https://www.melhoresdestinos.com.br/tag/transferencia-bonus/feed/"
+    ],
+    "Promomilhas": ["https://promomilhas.com.br/feed/"],
 }
 
 
@@ -56,6 +68,7 @@ DOBRO_RE = re.compile(r"\b(dobro|dobrar|2x|duplicar)\b.*?transf", re.I)
 
 # ----------------- UTIL ----------------------------
 
+
 def fetch(url: str) -> str | None:
     try:
         return requests.get(url, headers=HEADERS, timeout=TIMEOUT).text
@@ -68,7 +81,8 @@ def fetch(url: str) -> str | None:
                 continue
     return None
 
-def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int,str,str]]):
+
+def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]):
     raw = fetch(url)
     if not raw:
         return
@@ -86,7 +100,10 @@ def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int,str,s
             link = getattr(item.find("a"), "href", url)
             handle_text(name, text, link, seen, alerts)
 
-def handle_text(src: str, text: str, link: str, seen: set[str], alerts: list[tuple[int,str,str]]):
+
+def handle_text(
+    src: str, text: str, link: str, seen: set[str], alerts: list[tuple[int, str, str]]
+):
     m = BONUS_RE.search(text)
     pct = int(m.group("pct")) if m else None
     if not pct and DOBRO_RE.search(text):
@@ -101,26 +118,34 @@ def handle_text(src: str, text: str, link: str, seen: set[str], alerts: list[tup
     alerts.append((pct, src, link))
     seen.add(sig)
 
+
 # ----------------- TELEGRAM ------------------------
+
 
 def send_telegram(msg: str):
     token = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat  = os.environ["TELEGRAM_CHAT_ID"]
-    url   = f"https://api.telegram.org/bot{token}/sendMessage"
-    r = requests.post(url, data={
-        "chat_id": chat,
-        "text": msg,
-        "disable_web_page_preview": True,
-    }, timeout=15)
+    chat = os.environ["TELEGRAM_CHAT_ID"]
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    r = requests.post(
+        url,
+        data={
+            "chat_id": chat,
+            "text": msg,
+            "disable_web_page_preview": True,
+        },
+        timeout=15,
+    )
     print("[TG]", r.status_code, r.text[:120])
     r.raise_for_status()
 
+
 # ----------------- MAIN ----------------------------
+
 
 def main():
     start = time.time()
     seen = load_seen()
-    alerts: list[tuple[int,str,str]] = []
+    alerts: list[tuple[int, str, str]] = []
 
     print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
     for src, urls in PROGRAMS.items():
@@ -140,9 +165,11 @@ def main():
     save_seen(seen)
     print(f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}")
 
+
 # ---------------- PERSISTÊNCIA ---------------------
 
 SEEN_PATH = "seen.json"
+
 
 def load_seen() -> set[str]:
     if os.path.exists(SEEN_PATH):
@@ -152,11 +179,13 @@ def load_seen() -> set[str]:
             return set()
     return set()
 
+
 def save_seen(seen: set[str]):
     try:
         json.dump(list(seen), open(SEEN_PATH, "w"))
     except Exception:
         pass
+
 
 if __name__ == "__main__":
     main()
