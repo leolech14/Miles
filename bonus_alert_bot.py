@@ -145,18 +145,28 @@ def send_telegram(msg: str):
 # ----------------- MAIN ----------------------------
 
 
-def main():
-    start = time.time()
-    seen = load_seen()
+def scan_programs(seen: set[str]) -> list[tuple[int, str, str]]:
+    """Check all program sources and return found alerts."""
     alerts: list[tuple[int, str, str]] = []
-
     print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
     for src, urls in PROGRAMS.items():
         for url in urls:
             parse_feed(src, url, seen, alerts)
-
     if DEBUG_ALWAYS and not alerts:
         alerts.append((0, "Debug", "https://example.com"))
+    return alerts
+
+
+def run_scan() -> list[tuple[int, str, str]]:
+    seen = load_seen()
+    alerts = scan_programs(seen)
+    save_seen(seen)
+    return alerts
+
+
+def main():
+    start = time.time()
+    alerts = run_scan()
 
     for pct, src, link in alerts:
         msg = f"📣 {pct}% · {src}\n{link}"
@@ -165,7 +175,6 @@ def main():
         except Exception as e:
             print("[ERROR] Telegram", e)
 
-    save_seen(seen)
     print(f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}")
 
 

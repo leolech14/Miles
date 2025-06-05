@@ -18,6 +18,10 @@ This bot monitors airline mileage program blogs and RSS feeds for bonus transfer
    ```bash
    python bonus_alert_bot.py
    ```
+4. (Optional) Start the command bot that replies to `/ask` on Telegram:
+   ```bash
+   python ask_bot.py
+   ```
 
 The bot can also run via GitHub Actions using the included workflow.
 
