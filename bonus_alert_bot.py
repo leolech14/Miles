@@ -1,60 +1,56 @@
 #!/usr/bin/env python3
-"""
-Bonus Alert Bot • v2.6  (05 Jun 2025)
-======================================
-> *Modo de teste* — roda a cada 2 h e SEMPRE envia um ping (DEBUG_ALWAYS = True)
-> assim validamos entrega e parsing. Ajuste depois para produção.
+"""Bonus Alert Bot
+===================
 
-• Fontes reformuladas → feeds estáveis FeedBurner/WordPress + oficiais:
-    – Smiles, LATAM Pass, TudoAzul (feeds Melhores Destinos segmentados)
-    – Feeds oficiais Smiles & LATAM Pass
-    – MD tag "transferencia-bonus", Passageiro de Primeira e novos canais
-      Promoção Aérea, Pontos pra Voar e Promomilhas
-• Regex inteligente → detecta "NN % bônus transferência" ou "☑ dobro/2x transfer".
-• Cache visto em `seen.json` evita duplicatas.
-
+Monitor official mileage program pages for point transfer bonuses and alert a
+Telegram chat when a new promotion is detected.
 """
 from __future__ import annotations
+
+import json
 import os
 import re
-import json
 import time
 import warnings
-import requests
+from typing import Any
+
 import feedparser
+import requests
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 # ------------- CONFIGURAÇÃO PRINCIPAL -----------------
-MIN_BONUS = int(os.getenv("MIN_BONUS", 100))  # exige 100 % ou mais (ignorado se dobro)
-DEBUG_ALWAYS = os.getenv("DEBUG_ALWAYS", "True") == "True"  # envia ping teste
+MIN_BONUS = int(os.getenv("MIN_BONUS", 80))
+DEBUG_ALWAYS = os.getenv("DEBUG_MODE", "False") == "True"
 TIMEOUT = 25
 
-
-PROGRAMS = {
-    "Passageiro de Primeira": ["https://passageirodeprimeira.com/feed/"],
+DEFAULT_PROGRAMS: dict[str, list[str]] = {
     "Smiles": [
-        "https://feeds.feedburner.com/melhoresdestinos-smiles",
         "https://www.smiles.com.br/feed",
-        "https://blog.smiles.com.br/feed/",
+        "https://www.smiles.com.br/portal/tudo-pra-viajar/bancos-26-05-2025",
     ],
     "LATAM Pass": [
-        "https://feeds.feedburner.com/melhoresdestinos-latampass",
         "https://www.latam.com/latam-pass/feed",
-        "https://www.latam.com/latam-pass/promocoes/feed",
+        "https://latampass.latam.com/pt_br/promocao/bancos-pontos-extras",
     ],
     "TudoAzul": [
-        "https://feeds.feedburner.com/melhoresdestinos-tudoazul",
-        "https://blog.voeazul.com.br/feed/",
+        "https://www.voeazul.com.br/br/pt/programa-fidelidade/transferir-pontos"
     ],
-    "Promoção Aérea": ["https://promocaoaerea.com.br/feed/"],
-    "Pontos pra Voar": ["https://pontospravoar.com/feed/"],
-    "Melhores Destinos": [
-        "https://www.melhoresdestinos.com.br/tag/transferencia-bonus/feed/"
+    "Livelo": ["https://www.livelo.com.br/regulamentos-ativos"],
+    "Esfera": [
+        "https://latampass.latam.com/pt_br/promocao/esfera-milhas-extras"
     ],
-    "Promomilhas": ["https://promomilhas.com.br/feed/"],
+    "Iupp": ["https://www.itau.com.br/pontos-e-cashback"],
 }
+
+PROGRAMS: dict[str, list[str]]
+try:
+    PROGRAMS = json.loads(os.getenv("PROGRAMS_JSON", ""))
+    if not isinstance(PROGRAMS, dict):
+        raise ValueError
+except Exception:
+    PROGRAMS = DEFAULT_PROGRAMS
 
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
@@ -63,8 +59,8 @@ PROXY_TPL = [
     "https://r.jina.ai/http://{u}",
 ]
 
-BONUS_RE = re.compile(r"(?P<pct>\d{2,3})\s*%.*?(bônus|bonus).*?transf", re.I)
-DOBRO_RE = re.compile(r"\b(dobro|dobrar|2x|duplicar)\b.*?transf", re.I)
+BONUS_PCT_RE = re.compile(r"(?P<pct>\d{2,3})\s*%.*?(b[oô]nus|bonus)", re.I)
+DOBRO_RE = re.compile(r"\b(dobro|duplicar|2x)\b", re.I)
 
 # ----------------- UTIL ----------------------------
 
@@ -104,10 +100,17 @@ def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str,
 def handle_text(
     src: str, text: str, link: str, seen: set[str], alerts: list[tuple[int, str, str]]
 ):
-    m = BONUS_RE.search(text)
-    pct = int(m.group("pct")) if m else None
-    if not pct and DOBRO_RE.search(text):
+    text_norm = " ".join(text.split())
+    pct_match = BONUS_PCT_RE.search(text_norm)
+    pct: int | None = int(pct_match.group("pct")) if pct_match else None
+    has_transfer = re.search(r"transf", text_norm, re.I) is not None
+
+    if pct is not None and not has_transfer:
+        pct = None
+
+    if pct is None and DOBRO_RE.search(text_norm) and has_transfer:
         pct = 100
+
     if pct is None:
         return
     if pct < MIN_BONUS and not DEBUG_ALWAYS:
@@ -156,7 +159,7 @@ def main():
         alerts.append((0, "Debug", "https://example.com"))
 
     for pct, src, link in alerts:
-        msg = f"📣 {pct} % · {src}\n{link}"
+        msg = f"📣 {pct}% · {src}\n{link}"
         try:
             send_telegram(msg)
         except Exception as e:
