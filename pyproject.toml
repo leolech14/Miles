@@ -24,7 +24,7 @@ dev = [
     "pytest-cov",
     "pytest-xdist",
     "mypy",
-    "openai>=0",
+    "openai>=0.27,<1.0",
     "pdfplumber",
 ]
 
