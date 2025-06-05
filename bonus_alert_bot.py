@@ -19,7 +19,7 @@ from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 # ------------- CONFIGURAÇÃO PRINCIPAL -----------------
-MIN_BONUS      = int(os.getenv("MIN_BONUS", 80))   # exige 80 %+ (ignorado se dobro)
+MIN_BONUS      = int(os.getenv("MIN_BONUS", 100))   # exige 100 % ou mais (ignorado se dobro)
 DEBUG_ALWAYS   = os.getenv("DEBUG_ALWAYS", "True") == "True"  # envia ping teste
 TIMEOUT        = 25
 
@@ -30,14 +30,17 @@ PROGRAMS = {
     ],
     "Smiles": [
         "https://feeds.feedburner.com/melhoresdestinos-smiles",
-        "https://www.smiles.com.br/feed"
+        "https://www.smiles.com.br/feed",
+        "https://blog.smiles.com.br/feed/"
     ],
     "LATAM Pass": [
         "https://feeds.feedburner.com/melhoresdestinos-latampass",
-        "https://www.latam.com/latam-pass/feed"
+        "https://www.latam.com/latam-pass/feed",
+        "https://www.latam.com/latam-pass/promocoes/feed"
     ],
     "TudoAzul": [
-        "https://feeds.feedburner.com/melhoresdestinos-tudoazul"
+        "https://feeds.feedburner.com/melhoresdestinos-tudoazul",
+        "https://blog.voeazul.com.br/feed/"
     ]
 }
 
