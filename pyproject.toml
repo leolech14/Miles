@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "miles"
+version = "0.1.0"
+description = "Telegram Bonus Alert Bot"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+    "beautifulsoup4",
+    "feedparser",
+    "python-telegram-bot==22.1",
+]
+
+[project.optional-dependencies]
+# packages for development
+dev = [
+    "ruff",
+    "black",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "mypy",
+    "openai>=0",
+    "pdfplumber",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests"]
+

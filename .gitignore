@@ -3,3 +3,4 @@ __pycache__/
 seen.json
 .env
 pytest_cache/
+*.egg-info/
