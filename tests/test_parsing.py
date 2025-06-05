@@ -16,16 +16,17 @@ def test_handle_text_detects_percentage():
 def test_handle_text_dobro_triggers_default():
     alerts = []
     seen = set()
-    text = "promo dobrar seus pontos na transferência"
+    text = "promo com dobro de pontos na transferência"
     bot.handle_text("Test", text, "https://example.com/2", seen, alerts)
     assert alerts and alerts[0][0] == 100
 
 
-def test_programs_include_new_sources():
+def test_programs_include_official_sources():
     required = {
-        "Promoção Aérea",
-        "Pontos pra Voar",
-        "Melhores Destinos",
-        "Promomilhas",
+        "Smiles",
+        "LATAM Pass",
+        "TudoAzul",
+        "Livelo",
+        "Esfera",
     }
     assert required.issubset(bot.PROGRAMS.keys())
