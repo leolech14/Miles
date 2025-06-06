@@ -22,6 +22,33 @@ docker compose up
 
 Edit `sources.yaml` to change which pages are scanned.
 
+## Example sources
+
+- **Melhores Destinos**<br>
+  Portal brasileiro que publica diariamente promoções de bônus de transferência (Livelo, Esfera, Iupp etc.) e envia alertas imediatos via app, push, Telegram e newsletter.
+  > "Se tem promoção de transferência bonificada na área, tem condição boa para comprar milhas mais baratas..."<br>
+  Fonte: <https://www.melhoresdestinos.com.br/milhas/pontos-dinheiro-bonus-livelo-smiles-maio25>
+
+- **Passageiro de Primeira**<br>
+  Blog especializado em programas de fidelidade; divulga transferências bonificadas em tempo real, traz análises detalhadas e oferece grupos de Telegram, WhatsApp e notificações por aplicativo.
+  > "Relembramos as melhores promoções de transferências bonificadas de pontos que ocorreram em 2024"<br>
+  Fonte: <https://passageirodeprimeira.com/retrospectiva-promocoes-de-transferencias-bonificadas-2024/>
+
+- **Pontos pra Voar**<br>
+  Site que cobre promoções de milhas, cartões e hotéis; publica tabelas comparativas de bônus de transferência e avisa assinantes por newsletter, Telegram ou feed RSS.
+  > "Receba até 80% de bônus na transferência de pontos do Itaú para o Azul Fidelidade"<br>
+  Fonte: <https://pontospravoar.com/receba-ate-80-porcento-bonus-transferencia-pontos-itau-azul-fidelidade/>
+
+- **Mestre das Milhas**<br>
+  Portal focado em maximizar milhas; posta rapidamente campanhas de bônus de transferência, calcula custos e mantém canal no Telegram para alertas instantâneos.
+  > "Livelo oferece até 110% de bônus na transferência de pontos para a Smiles"<br>
+  Fonte: <https://mestredasmilhas.com/livelo-oferece-ate-110-de-bonus-na-transferencia-de-pontos-para-a-smiles/>
+
+- **Guia do Milheiro**<br>
+  Agregador brasileiro que reúne promoções de transferência bonificada, explica regras, mostra passo a passo e envia avisos por newsletter ou Telegram.
+  > "Azul Fidelidade oferece até 80% de bônus na transferência de pontos – veja como participar"<br>
+  Fonte: <https://guiadomilheiro.com.br/azul-fidelidade-oferece-ate-80-de-bonus-na-transferencia-de-pontos-veja-como-participar/>
+
 ## Development
 
 Run the checks before committing:
