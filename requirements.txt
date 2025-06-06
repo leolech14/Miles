@@ -6,3 +6,4 @@ APScheduler>=3.10
 redis>=5.0
 mypy
 PyYAML
+
