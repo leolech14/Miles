@@ -13,4 +13,3 @@ def setup_scheduler() -> None:
 
 if __name__ == "__main__":
     asyncio.run(asyncio.to_thread(run_scan))
-
