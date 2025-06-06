@@ -22,9 +22,13 @@ jobs:
       - run: pip install mypy pytest
       - run: mypy --strict miles/
       - run: pytest -q
-      - name: Build and push
+      - name: Set image tag (lower-case repo)
+        id: prep
         run: |
-          IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }}
+          REPO_LOWER=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ github.sha }}" >> $GITHUB_OUTPUT
+      - name: Build and push image
+        run: |
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker build -t $IMAGE .
-          docker push $IMAGE
+          docker build -t ${{ steps.prep.outputs.image }} .
+          docker push ${{ steps.prep.outputs.image }}
