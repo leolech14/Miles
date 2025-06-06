@@ -5,9 +5,9 @@ Telegram notifications when new deals appear.
 
 ## Quick start
 
-1. Configure the secrets `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `MIN_BONUS`,
-   `REDIS_URL` and `FLY_API_TOKEN` in your GitHub repository.  On Fly.io set the
-   same variables with `fly secrets set`.
+1. Configure the secrets `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `MIN_BONUS`
+   and `FLY_API_TOKEN` in your GitHub repository.
+
 2. Deploy to Fly.io with a single command:
 
    ```bash

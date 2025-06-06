@@ -16,8 +16,6 @@ dependencies = [
     "APScheduler>=3.10",
     "redis>=5.0",
     "PyYAML",
-    "types-requests",
-    "types-PyYAML",
 ]
 
 [project.optional-dependencies]

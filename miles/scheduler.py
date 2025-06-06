@@ -11,6 +11,5 @@ def setup_scheduler() -> None:
     scheduler.add_job(run_scan, "cron", hour=23, minute=0)
     scheduler.start()
 
-
 if __name__ == "__main__":
     asyncio.run(asyncio.to_thread(run_scan))

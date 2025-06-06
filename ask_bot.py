@@ -24,7 +24,6 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def _post_init(app: object) -> None:
     setup_scheduler()
-    await asyncio.to_thread(bot.run_scan)
 
 
 def main() -> None:
