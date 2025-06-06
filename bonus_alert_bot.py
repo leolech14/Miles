@@ -44,6 +44,20 @@ PROXY_TPL = [
 BONUS_PCT_RE = re.compile(r"(?P<pct>\d{2,3})\s*%.*?(b[oô]nus|bonus)", re.I)
 DOBRO_RE = re.compile(r"\b(dobro|duplicar|2x)\b", re.I)
 
+# Regex helpers for optional extraction
+PCT_RE = re.compile(r"(\d{2,3})%")
+URL_RE = re.compile(r"https?://\S+")
+
+
+def extract_pct(text: str) -> str | None:
+    m = PCT_RE.search(text)
+    return m.group(1) if m else None
+
+
+def extract_url(text: str) -> str | None:
+    m = URL_RE.search(text)
+    return m.group(0) if m else None
+
 # ----------------- UTIL ----------------------------
 
 

@@ -16,6 +16,9 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -e .
+      - run: |
+          # install stub packages for mypy strict mode
+          pip install types-PyYAML types-requests
       - run: pip install mypy pytest
       - run: mypy --strict miles/
       - run: pytest -q
