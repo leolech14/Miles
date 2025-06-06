@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import os
 
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+from miles.scheduler import setup_scheduler
 
 import bonus_alert_bot as bot
 
@@ -13,22 +16,24 @@ import bonus_alert_bot as bot
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Run the scan and reply with any found promotions."""
     await update.message.reply_text("Scanning, please wait...")
-    alerts = bot.run_scan()
+    alerts = await asyncio.to_thread(bot.run_scan, update.effective_chat.id)
     if not alerts:
         await update.message.reply_text("No promos found.")
         return
-    for pct, src, link in alerts:
-        msg = f"\U0001F4E3 {pct}% · {src}\n{link}"
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=msg,
-            disable_web_page_preview=True,
-        )
+
+
+async def _post_init(app: object) -> None:
+    setup_scheduler()
 
 
 def main() -> None:
     token = os.environ["TELEGRAM_BOT_TOKEN"]
-    app = ApplicationBuilder().token(token).build()
+    app = (
+        ApplicationBuilder()
+        .token(token)
+        .post_init(_post_init)
+        .build()
+    )
     app.add_handler(CommandHandler("ask", ask))
     app.run_polling()
 

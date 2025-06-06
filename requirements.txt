@@ -1,5 +1,10 @@
 requests
 beautifulsoup4
 feedparser
-python-telegram-bot==22.1
-matplotlib
+python-telegram-bot>=21.0
+APScheduler>=3.10
+redis>=5.0
+mypy
+PyYAML
+types-requests
+types-PyYAML
