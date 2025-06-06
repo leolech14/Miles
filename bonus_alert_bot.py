@@ -7,16 +7,18 @@ Telegram chat when a new promotion is detected.
 """
 from __future__ import annotations
 
-import json
 import os
 import re
 import time
 import warnings
 from typing import Any
+import hashlib
+import yaml
+from urllib.parse import urlparse
 
 import feedparser
 import requests
-from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning, Tag
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
@@ -25,32 +27,12 @@ MIN_BONUS = int(os.getenv("MIN_BONUS", 80))
 DEBUG_ALWAYS = os.getenv("DEBUG_MODE", "False") == "True"
 TIMEOUT = 25
 
-DEFAULT_PROGRAMS: dict[str, list[str]] = {
-    "Smiles": [
-        "https://www.smiles.com.br/feed",
-        "https://www.smiles.com.br/portal/tudo-pra-viajar/bancos-26-05-2025",
-    ],
-    "LATAM Pass": [
-        "https://www.latam.com/latam-pass/feed",
-        "https://latampass.latam.com/pt_br/promocao/bancos-pontos-extras",
-    ],
-    "TudoAzul": [
-        "https://www.voeazul.com.br/br/pt/programa-fidelidade/transferir-pontos"
-    ],
-    "Livelo": ["https://www.livelo.com.br/regulamentos-ativos"],
-    "Esfera": [
-        "https://latampass.latam.com/pt_br/promocao/esfera-milhas-extras"
-    ],
-    "Iupp": ["https://www.itau.com.br/pontos-e-cashback"],
-}
-
-PROGRAMS: dict[str, list[str]]
+SOURCES_PATH = "sources.yaml"
 try:
-    PROGRAMS = json.loads(os.getenv("PROGRAMS_JSON", ""))
-    if not isinstance(PROGRAMS, dict):
-        raise ValueError
-except Exception:
-    PROGRAMS = DEFAULT_PROGRAMS
+    with open(SOURCES_PATH) as f:
+        SOURCES: list[str] = yaml.safe_load(f)
+except FileNotFoundError:
+    SOURCES = []
 
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
@@ -78,7 +60,7 @@ def fetch(url: str) -> str | None:
     return None
 
 
-def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]):
+def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]) -> None:
     raw = fetch(url)
     if not raw:
         return
@@ -91,7 +73,8 @@ def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str,
             handle_text(name, text, link, seen, alerts)
     else:
         soup = BeautifulSoup(raw, "html.parser")
-        for item in soup.find_all(["item", "article", "entry", "h2", "h3"]):
+        for itm in soup.find_all(["item", "article", "entry", "h2", "h3"]):
+            item = itm if isinstance(itm, Tag) else Tag(name="")
             text = item.get_text(" ")[:400]
             link = getattr(item.find("a"), "href", url)
             handle_text(name, text, link, seen, alerts)
@@ -99,7 +82,7 @@ def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str,
 
 def handle_text(
     src: str, text: str, link: str, seen: set[str], alerts: list[tuple[int, str, str]]
-):
+) -> None:
     text_norm = " ".join(text.split())
     pct_match = BONUS_PCT_RE.search(text_norm)
     pct: int | None = int(pct_match.group("pct")) if pct_match else None
@@ -125,9 +108,9 @@ def handle_text(
 # ----------------- TELEGRAM ------------------------
 
 
-def send_telegram(msg: str):
+def send_telegram(msg: str, chat_id: str | None = None) -> None:
     token = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat = os.environ["TELEGRAM_CHAT_ID"]
+    chat = chat_id or os.environ["TELEGRAM_CHAT_ID"]
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     r = requests.post(
         url,
@@ -149,54 +132,41 @@ def scan_programs(seen: set[str]) -> list[tuple[int, str, str]]:
     """Check all program sources and return found alerts."""
     alerts: list[tuple[int, str, str]] = []
     print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
-    for src, urls in PROGRAMS.items():
-        for url in urls:
-            parse_feed(src, url, seen, alerts)
+    for url in SOURCES:
+        name = urlparse(url).netloc
+        parse_feed(name, url, seen, alerts)
     if DEBUG_ALWAYS and not alerts:
         alerts.append((0, "Debug", "https://example.com"))
     return alerts
 
 
-def run_scan() -> list[tuple[int, str, str]]:
-    seen = load_seen()
+from miles.storage import get_store
+
+
+def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
+    """Run a scan and send Telegram messages for new promos."""
+    store = get_store()
+    seen: set[str] = set()
     alerts = scan_programs(seen)
-    save_seen(seen)
+    for pct, src, link in alerts:
+        h = hashlib.sha1(f"{pct}{link}".encode()).hexdigest()
+        if store.has(h):
+            continue
+        line = f"\U0001F4E3 {pct}% \xb7 {src}\n{link}"
+        try:
+            send_telegram(line, chat_id)
+        except Exception as e:
+            print("[ERROR] Telegram", e)
+        store.add(h)
     return alerts
 
 
-def main():
+def main() -> None:
     start = time.time()
     alerts = run_scan()
-
-    for pct, src, link in alerts:
-        msg = f"📣 {pct}% · {src}\n{link}"
-        try:
-            send_telegram(msg)
-        except Exception as e:
-            print("[ERROR] Telegram", e)
-
-    print(f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}")
-
-
-# ---------------- PERSISTÊNCIA ---------------------
-
-SEEN_PATH = "seen.json"
-
-
-def load_seen() -> set[str]:
-    if os.path.exists(SEEN_PATH):
-        try:
-            return set(json.load(open(SEEN_PATH)))
-        except Exception:
-            return set()
-    return set()
-
-
-def save_seen(seen: set[str]):
-    try:
-        json.dump(list(seen), open(SEEN_PATH, "w"))
-    except Exception:
-        pass
+    print(
+        f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}"
+    )
 
 
 if __name__ == "__main__":
