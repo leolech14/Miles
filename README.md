@@ -22,6 +22,10 @@ This bot monitors airline mileage program blogs and RSS feeds for bonus transfer
    ```bash
    python ask_bot.py
    ```
+5. To run both bots together, you can use the helper script:
+   ```bash
+   ./start_bots.sh
+   ```
 
 The bot can also run via GitHub Actions using the included workflow.
 
