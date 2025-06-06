@@ -73,11 +73,9 @@ def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str,
             handle_text(name, text, link, seen, alerts)
     else:
         soup = BeautifulSoup(raw, "html.parser")
-        for item in (
-            itm
-            for itm in soup.find_all(["item", "article", "entry", "h2", "h3"])
-            if isinstance(itm, Tag)
-        ):
+
+        for itm in soup.find_all(["item", "article", "entry", "h2", "h3"]):
+            item = itm if isinstance(itm, Tag) else Tag(name="")
             text = item.get_text(" ")[:400]
             link = getattr(item.find("a"), "href", url)
             handle_text(name, text, link, seen, alerts)
