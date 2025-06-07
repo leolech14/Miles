@@ -14,7 +14,11 @@ import warnings
 import requests
 import feedparser
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
->>>>>>> 8a6cce9 (ruff --fix: fix ruff issues)
+import yaml
+from urllib.parse import urlparse
+from bs4.element import Tag
+import hashlib
+
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 # ------------- CONFIGURAÇÃO PRINCIPAL -----------------
@@ -28,7 +32,6 @@ try:
         SOURCES: list[str] = yaml.safe_load(f)
 except FileNotFoundError:
     SOURCES = []
-
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
 PROXY_TPL = [
@@ -93,7 +96,6 @@ def parse_feed(
             if isinstance(a_tag, Tag):
                 href = a_tag.get("href")
                 link = href if isinstance(href, str) else url
-                
             else:
                 link = url
             handle_text(name, text, link, seen, alerts)
@@ -144,6 +146,34 @@ def send_telegram(msg: str, chat_id: str | None = None) -> None:
     )
     print("[TG]", r.status_code, r.text[:120])
     r.raise_for_status()
+
+
+# ----------------- STORE ---------------------------
+
+
+class Store:
+    def __init__(self, path: str = "seen_alerts.json"):
+        self.path = path
+        try:
+            with open(self.path, "r") as f:
+                self._data = set(json.load(f))
+        except (FileNotFoundError, json.JSONDecodeError):
+            self._data = set()
+
+    def has(self, key: str) -> bool:
+        return key in self._data
+
+    def add(self, key: str) -> None:
+        self._data.add(key)
+        self._save()
+
+    def _save(self):
+        with open(self.path, "w") as f:
+            json.dump(list(self._data), f)
+
+
+def get_store() -> Store:
+    return Store()
 
 
 # ----------------- MAIN ----------------------------
