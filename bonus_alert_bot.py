@@ -6,23 +6,6 @@ Monitor official mileage program pages for point transfer bonuses and alert a
 Telegram chat when a new promotion is detected.
 """
 from __future__ import annotations
-<<<<<<< HEAD
-
-import os
-import re
-import time
-import warnings
-import hashlib
-import yaml
-
-from urllib.parse import urlparse, urljoin
-
-import feedparser
-import requests
-from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning, Tag
-from miles.storage import get_store
-
-=======
 import os
 import re
 import json
