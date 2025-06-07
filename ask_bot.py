@@ -9,7 +9,7 @@ import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-import openai
+from openai import OpenAI
 from miles.chat_store import ChatMemory
 
 from miles.scheduler import setup_scheduler
