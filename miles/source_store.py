@@ -40,7 +40,10 @@ class SourceStore:
 
     def add(self, url: str) -> bool:
         if not self.r:
-            print("[source_store] Redis is not connected. Cannot add source.", file=sys.stderr)
+            print(
+                "[source_store] Redis is not connected. Cannot add source.",
+                file=sys.stderr,
+            )
             return False
         if not url.startswith("http") or len(url) > 200:
             logging.warning("Rejected invalid URL: %s", url)
@@ -54,7 +57,10 @@ class SourceStore:
 
     def remove(self, token: str) -> str | None:
         if not self.r:
-            print("[source_store] Redis is not connected. Cannot remove source.", file=sys.stderr)
+            print(
+                "[source_store] Redis is not connected. Cannot remove source.",
+                file=sys.stderr,
+            )
             return None
         target = None
         if token.isdigit():
