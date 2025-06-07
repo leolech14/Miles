@@ -24,7 +24,9 @@ def _extract_urls(html: str) -> list[str]:
             if isinstance(href, str):  # Ensure 'href' is a string
                 if "duckduckgo.com" in urlparse(href).netloc:
                     q = parse_qs(urlparse(href).query).get("uddg")
-                    if isinstance(q, list) and q and isinstance(q[0], str):  # Validate 'q'
+                    if (
+                        isinstance(q, list) and q and isinstance(q[0], str)
+                    ):  # Validate 'q'
                         href = unquote(q[0])
                 parsed = urlparse(href)
                 if parsed.scheme.startswith("http") and parsed.netloc:
