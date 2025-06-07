@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 def load_data() -> dict[str, list[int]]:
     """Load CSV files and accumulate counts per month."""
-    counts = defaultdict(lambda: [0] * 12)
+    counts: dict[str, list[int]] = defaultdict(lambda: [0] * 12)
     hist_dir = Path("history")
     for csv_file in hist_dir.glob("*.csv"):
         with open(csv_file, newline="") as f:
@@ -22,7 +22,7 @@ def load_data() -> dict[str, list[int]]:
     return counts
 
 
-def plot_heatmap(counts: dict[str, list[int]]):
+def plot_heatmap(counts: dict[str, list[int]]) -> None:
     """Plot heatmap and save to stats/heatmap.png."""
     if not counts:
         print("No data to plot")
@@ -41,8 +41,8 @@ def plot_heatmap(counts: dict[str, list[int]]):
     plt.savefig("stats/heatmap.png")
 
 
-def main():
-    counts = load_data()
+def main() -> None:
+    counts: dict[str, list[int]] = load_data()
     plot_heatmap(counts)
 
 

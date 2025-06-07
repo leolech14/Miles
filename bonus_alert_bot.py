@@ -11,7 +11,6 @@ import os
 import re
 import time
 import warnings
-from typing import Any
 import hashlib
 import yaml
 from urllib.parse import urlparse
@@ -19,6 +18,7 @@ from urllib.parse import urlparse
 import feedparser
 import requests
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning, Tag
+from miles.storage import get_store
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
@@ -27,7 +27,7 @@ MIN_BONUS = int(os.getenv("MIN_BONUS", 80))
 DEBUG_ALWAYS = os.getenv("DEBUG_MODE", "False") == "True"
 TIMEOUT = 25
 
-SOURCES_PATH = "sources.yaml"
+SOURCES_PATH = os.getenv("SOURCES_PATH", "sources.yaml")
 try:
     with open(SOURCES_PATH) as f:
         SOURCES: list[str] = yaml.safe_load(f)
@@ -58,6 +58,7 @@ def extract_url(text: str) -> str | None:
     m = URL_RE.search(text)
     return m.group(0) if m else None
 
+
 # ----------------- UTIL ----------------------------
 
 
@@ -74,7 +75,9 @@ def fetch(url: str) -> str | None:
     return None
 
 
-def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]) -> None:
+def parse_feed(
+    name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]
+) -> None:
     raw = fetch(url)
     if not raw:
         return
@@ -91,7 +94,8 @@ def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str,
         for itm in soup.find_all(["item", "article", "entry", "h2", "h3"]):
             item = itm if isinstance(itm, Tag) else Tag(name="")
             text = item.get_text(" ")[:400]
-            link = getattr(item.find("a"), "href", url)
+            a_tag = item.find("a")
+            link = a_tag.get("href") if isinstance(a_tag, Tag) else url
             handle_text(name, text, link, seen, alerts)
 
 
@@ -124,8 +128,10 @@ def handle_text(
 
 
 def send_telegram(msg: str, chat_id: str | None = None) -> None:
-    token = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat = chat_id or os.environ["TELEGRAM_CHAT_ID"]
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat = chat_id or os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        raise RuntimeError("Telegram credentials are missing")
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     r = requests.post(
         url,
@@ -155,9 +161,6 @@ def scan_programs(seen: set[str]) -> list[tuple[int, str, str]]:
     return alerts
 
 
-from miles.storage import get_store
-
-
 def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
     """Run a scan and send Telegram messages for new promos."""
     store = get_store()
@@ -167,7 +170,7 @@ def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
         h = hashlib.sha1(f"{pct}{link}".encode()).hexdigest()
         if store.has(h):
             continue
-        line = f"\U0001F4E3 {pct}% \xb7 {src}\n{link}"
+        line = f"\U0001f4e3 {pct}% \xb7 {src}\n{link}"
         try:
             send_telegram(line, chat_id)
         except Exception as e:
@@ -179,9 +182,7 @@ def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
 def main() -> None:
     start = time.time()
     alerts = run_scan()
-    print(
-        f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}"
-    )
+    print(f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}")
 
 
 if __name__ == "__main__":

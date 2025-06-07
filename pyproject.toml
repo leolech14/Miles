@@ -33,6 +33,10 @@ dev = [
     "types-requests>=2.31.0.20240406",
 ]
 
+[project.scripts]
+miles-scan = "bonus_alert_bot:main"
+miles-ask = "ask_bot:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["tests"]
