@@ -3,14 +3,20 @@ import redis
 import yaml
 import logging
 from typing import List
+import sys
 
 
 class SourceStore:
     def __init__(self, yaml_path: str = "sources.yaml"):
         self.yaml_path = yaml_path
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        self.r = redis.Redis.from_url(url, decode_responses=True)
-        if not self.r.exists("sources"):
+        try:
+            self.r = redis.Redis.from_url(url, decode_responses=True)
+            self.r.ping()
+        except Exception as e:
+            print(f"[source_store] Redis connection failed: {e}", file=sys.stderr)
+            self.r = None
+        if self.r and not self.r.exists("sources"):
             self._bootstrap_from_yaml()
 
     def _bootstrap_from_yaml(self) -> None:
@@ -28,9 +34,13 @@ class SourceStore:
 
     # public API ---------------------------------------------------------
     def all(self) -> List[str]:
+        if not self.r:
+            return []
         return sorted(self.r.smembers("sources"))
 
     def add(self, url: str) -> bool:
+        if not self.r:
+            return False
         if not url.startswith("http") or len(url) > 200:
             logging.warning("Rejected invalid URL: %s", url)
             return False
@@ -42,6 +52,8 @@ class SourceStore:
         return added
 
     def remove(self, token: str) -> str | None:
+        if not self.r:
+            return None
         target = None
         if token.isdigit():
             try:

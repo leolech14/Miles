@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 
 import asyncio
 import logging
@@ -22,6 +23,11 @@ import requests
 from urllib.parse import urlparse
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+print("[ask_bot] Starting up...")
+print(f"[ask_bot] TELEGRAM_BOT_TOKEN set: {'TELEGRAM_BOT_TOKEN' in os.environ}")
+print(f"[ask_bot] REDIS_URL: {os.getenv('REDIS_URL')}")
+print(f"[ask_bot] OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
