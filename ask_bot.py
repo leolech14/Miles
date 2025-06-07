@@ -9,11 +9,13 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 from miles.scheduler import setup_scheduler
+from miles.source_search import update_sources
 
 import bonus_alert_bot as bot
 import yaml
 import requests
 from urllib.parse import urlparse
+from typing import Any
 
 
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -63,6 +65,45 @@ async def sources(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("\n".join(lines))
 
 
+async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Search for new sources and report the result."""
+    if not update.message:
+        return
+    await update.message.reply_text("Updating sources, please wait...")
+    added = await asyncio.to_thread(update_sources)
+    if added:
+        msg = "New sources added:\n" + "\n".join(added)
+    else:
+        msg = "No new sources found."
+    await update.message.reply_text(msg)
+
+
+async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Reply using OpenAI ChatCompletion."""
+    if not update.message:
+        return
+    text = update.message.text or ""
+    parts = text.split(" ", 1)
+    if len(parts) < 2:
+        await update.message.reply_text("Usage: /chat <message>")
+        return
+    await update.message.reply_text("Thinking...")
+    try:
+        import openai
+
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        resp: Any = await asyncio.to_thread(
+            openai.ChatCompletion.create,
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": parts[1]}],
+        )
+        msg = resp["choices"][0]["message"]["content"].strip()
+    except Exception as e:  # pragma: no cover - network usage
+        await update.message.reply_text(f"Error: {e}")
+        return
+    await update.message.reply_text(msg)
+
+
 async def _post_init(app: object) -> None:
     setup_scheduler()
 
@@ -74,6 +115,8 @@ def main() -> None:
     app = ApplicationBuilder().token(token).post_init(_post_init).build()
     app.add_handler(CommandHandler("ask", ask))
     app.add_handler(CommandHandler("sources", sources))
+    app.add_handler(CommandHandler("update", update))
+    app.add_handler(CommandHandler("chat", chat))
     app.run_polling()
 
 
