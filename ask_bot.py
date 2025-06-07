@@ -20,6 +20,8 @@ import bonus_alert_bot as bot
 import yaml
 import requests
 from urllib.parse import urlparse
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
@@ -131,7 +133,20 @@ async def _post_init(app: object) -> None:
     setup_scheduler()
 
 
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+
+def start_health_server():
+    server = HTTPServer(("0.0.0.0", 8080), HealthHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+
+
 def main() -> None:
+    start_health_server()  # Start HTTP health server for Fly.io
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise SystemExit("TELEGRAM_BOT_TOKEN is not set")
