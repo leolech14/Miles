@@ -39,6 +39,8 @@ def plot_heatmap(counts: dict[str, list[int]]) -> None:
     Path("stats").mkdir(exist_ok=True)
     plt.tight_layout()
     plt.savefig("stats/heatmap.png")
+    plt.imshow(data, cmap="Blues")
+    plt.show()
 
 
 def main() -> None:
