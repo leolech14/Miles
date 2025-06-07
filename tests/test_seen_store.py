@@ -1,4 +1,8 @@
+from pathlib import Path
+import sys
 from miles.storage import FileSeenStore
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 
 def test_file_store(tmp_path):
@@ -8,12 +12,6 @@ def test_file_store(tmp_path):
     assert not store.has(h)
     store.add(h)
     assert store.has(h)
-import pytest
-from pathlib import Path
-import sys
-
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-from miles.storage import FileSeenStore
 
 def test_file_store_empty_initialization(tmp_path):
     f = tmp_path / "empty.json"

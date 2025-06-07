@@ -6,7 +6,7 @@ import yaml
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from bonus_alert_bot import send_telegram, HEADERS
+from miles.bonus_alert_bot import send_telegram, HEADERS
 import os
 
 SOURCES_PATH = os.getenv("SOURCES_PATH", "sources.yaml")

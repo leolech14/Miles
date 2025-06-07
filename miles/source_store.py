@@ -2,7 +2,7 @@ import os
 import redis
 import yaml
 import logging
-from typing import List, Optional
+from typing import List, Optional, cast
 import sys
 
 
@@ -11,7 +11,7 @@ class SourceStore:
         self.yaml_path = yaml_path
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         try:
-            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
+            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(  # type: ignore[type-arg]
                 url, decode_responses=True
             )
             self.r.ping()
@@ -40,7 +40,9 @@ class SourceStore:
     def all(self) -> List[str]:
         if not self.r:
             return []
-        return sorted(self.r.smembers("sources"))
+        sources = self.r.smembers("sources")
+        # smembers returns a set of strings when decode_responses=True
+        return sorted(cast(set[str], sources))
 
     def add(self, url: str) -> bool:
         if not self.r:

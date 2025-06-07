@@ -4,7 +4,7 @@ import yaml
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-import bonus_alert_bot as bot
+import miles.bonus_alert_bot as bot
 
 
 def test_parse_feed_produces_alert(monkeypatch: pytest.MonkeyPatch) -> None:

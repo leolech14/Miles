@@ -4,7 +4,7 @@ import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from zoneinfo import ZoneInfo
 
-from bonus_alert_bot import run_scan
+from miles.bonus_alert_bot import run_scan
 from miles.source_search import update_sources
 
 

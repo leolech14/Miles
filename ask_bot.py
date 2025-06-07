@@ -6,7 +6,6 @@ from __future__ import annotations
 import os
 
 import asyncio
-import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
@@ -17,7 +16,7 @@ from miles.scheduler import setup_scheduler
 from miles.source_search import update_sources
 from miles.source_store import SourceStore
 
-import bonus_alert_bot as bot
+import miles.bonus_alert_bot as bot
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -43,6 +42,10 @@ if not OPENAI_API_KEY:
     )
 
 openai.api_key = OPENAI_API_KEY
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
+# Initialize OpenAI client with proper API key
+client = OpenAI(api_key=OPENAI_API_KEY)
 memory = ChatMemory()
 
 store = SourceStore()
@@ -137,18 +140,15 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     try:
         resp = await asyncio.to_thread(
-            openai.chat.completions.create,
+            client.chat.completions.create,
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             messages=user_msgs[-20:],
             stream=False,
             temperature=0.7,
         )
         reply = resp.choices[0].message.content
-    except openai.error.OpenAIError as e:
+    except Exception:
         await update.message.reply_text("OpenAI API error. Please try again later.")
-        return
-    except Exception as e:
-        await update.message.reply_text("Unexpected error. Please contact support.")
         return
 
     user_msgs.append({"role": "assistant", "content": reply})

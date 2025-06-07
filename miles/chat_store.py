@@ -12,7 +12,7 @@ class ChatMemory:
     def __init__(self) -> None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         try:
-            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
+            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(  # type: ignore[type-arg]
                 url, decode_responses=True
             )
             # Test connection
@@ -29,7 +29,9 @@ class ChatMemory:
         if not self.r:
             return []
         raw = self.r.get(self._key(user_id))
-        return cast(list[dict[str, str]], json.loads(raw)) if raw else []
+        if raw:
+            return cast(list[dict[str, str]], json.loads(str(raw)))
+        return []
 
     def save(self, user_id: int, messages: list[dict[str, str]]) -> None:
         if not self.r:
