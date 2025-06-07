@@ -1,0 +1,8 @@
+# flyctl launch added from .gitignore
+**/__pycache__
+**/*.pyc
+**/seen.json
+**/.env
+**/pytest_cache
+**/*.egg-info
+fly.toml
