@@ -19,7 +19,9 @@ jobs:
       - run: |
           # install stub packages for mypy strict mode
           pip install types-PyYAML types-requests
-      - run: pip install mypy pytest
+      - run: pip install ruff black mypy pytest
+      - run: ruff check .
+      - run: black --check .
       - run: mypy --strict miles/
       - run: pytest -q
       - name: Set image tag (lower-case repo)

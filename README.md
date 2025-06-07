@@ -3,10 +3,17 @@
 This bot checks several mileage blogs for transfer bonus promotions and sends
 Telegram notifications when new deals appear.
 
+Environment variables:
+
+- `TELEGRAM_BOT_TOKEN` – bot token used to send messages
+- `TELEGRAM_CHAT_ID` – default chat to notify
+- `MIN_BONUS` – minimum bonus percentage to alert (default 80)
+- `SOURCES_PATH` – path to the YAML file with program sources
+
 ## Quick start
 
-1. Configure the secrets `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `MIN_BONUS`
-   and `FLY_API_TOKEN` in your GitHub repository.
+1. Configure the secrets `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `MIN_BONUS`,
+   `FLY_API_TOKEN` and optionally `SOURCES_PATH` in your GitHub repository.
 
 2. Create the Fly.io app (run once):
 
@@ -24,6 +31,8 @@ To run everything locally:
 ```bash
 docker compose up
 ```
+
+After cloning the repository, run `pre-commit install` to enable local checks.
 
 Edit `sources.yaml` to change which pages are scanned.
 
