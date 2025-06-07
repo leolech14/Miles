@@ -28,10 +28,14 @@ print(f"[ask_bot] OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
 print(f"[ask_bot] PORT env var: {os.getenv('PORT', 'NOT_SET')}")
 
 REQUIRED_ENV_VARS = [
-    "OPENAI_API_KEY",
     "TELEGRAM_BOT_TOKEN",
     "TELEGRAM_CHAT_ID",
-    "REDIS_URL",
+]
+
+OPTIONAL_ENV_VARS = [
+    "OPENAI_API_KEY",  # Only needed for /chat command
+    "REDIS_URL",  # Falls back to file storage
+    "MIN_BONUS",  # Has default value
 ]
 
 
@@ -50,6 +54,26 @@ def check_environment_variables():
         )
     print("[ask_bot] All required environment variables are set")
 
+    # Check optional variables and warn if missing
+    print(
+        f"[ask_bot] Checking optional environment variables: {', '.join(OPTIONAL_ENV_VARS)}"
+    )
+    missing_optional = [var for var in OPTIONAL_ENV_VARS if not os.getenv(var)]
+    if missing_optional:
+        print(
+            f"[ask_bot] WARNING: Missing optional environment variables: {', '.join(missing_optional)}"
+        )
+        print("[ask_bot] Some features may be disabled:")
+        for var in missing_optional:
+            if var == "OPENAI_API_KEY":
+                print("[ask_bot] - /chat command will not work")
+            elif var == "REDIS_URL":
+                print("[ask_bot] - Using file storage instead of Redis")
+            elif var == "MIN_BONUS":
+                print("[ask_bot] - Using default minimum bonus threshold")
+    else:
+        print("[ask_bot] All optional environment variables are set")
+
 
 # Environment variables will be checked in main
 
@@ -57,9 +81,9 @@ def check_environment_variables():
 def get_openai_client():
     """Get OpenAI client, checking for API key"""
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
+    if not api_key or api_key == "not_set":
         raise ValueError(
-            "OPENAI_API_KEY is missing. Please update your environment variables."
+            "OPENAI_API_KEY is missing or not configured. Please update your environment variables."
         )
     return OpenAI(api_key=api_key)
 
@@ -148,6 +172,13 @@ async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    # Check if OpenAI is available
+    if not openai_client:
+        await update.message.reply_text(
+            "❌ Chat feature is not available. OpenAI API key not configured."
+        )
+        return
+
     text = update.message.text
     parts = text.split(maxsplit=1)
     if len(parts) < 2:
@@ -211,8 +242,13 @@ def main() -> None:
     try:
         print("[ask_bot] Initializing OpenAI client...")
         global openai_client
-        openai_client = get_openai_client()
-        print("[ask_bot] OpenAI client initialized")
+        try:
+            openai_client = get_openai_client()
+            print("[ask_bot] OpenAI client initialized")
+        except Exception as e:
+            print(f"[ask_bot] WARNING: OpenAI client initialization failed: {e}")
+            print("[ask_bot] Chat functionality will be disabled")
+            openai_client = None
 
         print("[ask_bot] Starting health server...")
         start_health_server()  # Start HTTP health server for Fly.io

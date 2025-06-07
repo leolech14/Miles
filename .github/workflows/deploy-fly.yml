@@ -19,11 +19,11 @@ jobs:
       - name: "Push secrets to Fly"
         run: |
           fly secrets set \
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
-            TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
-            MIN_BONUS=${{ secrets.MIN_BONUS }} \
-            REDIS_URL=${{ secrets.REDIS_URL }}
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY || 'not_set' }}" \
+            TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
+            TELEGRAM_CHAT_ID="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            MIN_BONUS="${{ secrets.MIN_BONUS || '80' }}" \
+            REDIS_URL="${{ secrets.REDIS_URL || 'not_set' }}"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - uses: superfly/flyctl-actions@1.5

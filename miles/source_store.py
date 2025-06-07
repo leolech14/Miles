@@ -10,14 +10,21 @@ class SourceStore:
     def __init__(self, yaml_path: str = "sources.yaml"):
         self.yaml_path = yaml_path
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        try:
-            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
-                url, decode_responses=True
+        if url == "not_set":
+            print(
+                "[source_store] Redis URL not configured, using file storage only",
+                file=sys.stderr,
             )
-            self.r.ping()
-        except Exception as e:
-            print(f"[source_store] Redis connection failed: {e}", file=sys.stderr)
             self.r = None
+        else:
+            try:
+                self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
+                    url, decode_responses=True
+                )
+                self.r.ping()
+            except Exception as e:
+                print(f"[source_store] Redis connection failed: {e}", file=sys.stderr)
+                self.r = None
         if self.r and not self.r.exists("sources"):
             self._bootstrap_from_yaml()
 
