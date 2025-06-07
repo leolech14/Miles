@@ -4,7 +4,7 @@ from urllib.parse import urlparse, parse_qs, unquote, quote_plus
 
 import yaml
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from bonus_alert_bot import send_telegram, HEADERS, SOURCES_PATH
 
@@ -16,15 +16,17 @@ def _extract_urls(html: str) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
     urls: list[str] = []
     for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if "duckduckgo.com" in urlparse(href).netloc:
-            q = parse_qs(urlparse(href).query).get("uddg")
-            if q:
-                href = unquote(q[0])
-        parsed = urlparse(href)
-        if parsed.scheme.startswith("http") and parsed.netloc:
-            url = f"https://{parsed.netloc}"
-            urls.append(url)
+        if isinstance(a, Tag):  # Ensure 'a' is a Tag
+            href = a["href"]
+            if isinstance(href, str):  # Ensure 'href' is a string
+                if "duckduckgo.com" in urlparse(href).netloc:
+                    q = parse_qs(urlparse(href).query).get("uddg")
+                    if isinstance(q, list) and q and isinstance(q[0], str):  # Validate 'q'
+                        href = unquote(q[0])
+                parsed = urlparse(href)
+                if parsed.scheme.startswith("http") and parsed.netloc:
+                    url = f"https://{parsed.netloc}"
+                    urls.append(url)
     return urls
 
 
