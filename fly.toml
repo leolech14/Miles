@@ -1,13 +1,16 @@
-# fly.toml app configuration file generated for miles-redis on 2025-06-07T09:27:44Z
+# fly.toml app configuration file generated for miles on 2025-06-07T09:27:44Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'miles-redis'
+app = 'miles'
 primary_region = 'iad'
 
 [build]
-  image = 'redis:7'
+  dockerfile = 'Dockerfile'
+
+[env]
+  PYTHONUNBUFFERED = '1'
 
 [[vm]]
   memory = '1gb'
