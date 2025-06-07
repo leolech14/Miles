@@ -29,6 +29,16 @@ print(f"[ask_bot] TELEGRAM_BOT_TOKEN set: {'TELEGRAM_BOT_TOKEN' in os.environ}")
 print(f"[ask_bot] REDIS_URL: {os.getenv('REDIS_URL')}")
 print(f"[ask_bot] OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
 
+REQUIRED_ENV_VARS = [
+    "OPENAI_API_KEY",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_CHAT_ID",
+    "REDIS_URL",
+]
+missing = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+if missing:
+    raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError(
