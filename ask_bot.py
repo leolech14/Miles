@@ -31,7 +31,9 @@ print(f"[ask_bot] OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY is missing. Please update your environment variables.")
+    raise ValueError(
+        "OPENAI_API_KEY is missing. Please update your environment variables."
+    )
 
 openai.api_key = OPENAI_API_KEY
 memory = ChatMemory()
