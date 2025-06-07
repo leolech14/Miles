@@ -31,6 +31,7 @@ dev = [
     "pdfplumber",
     "types-PyYAML>=6.0.12",
     "types-requests>=2.31.0.20240406",
+    "matplotlib",
 ]
 
 [project.scripts]

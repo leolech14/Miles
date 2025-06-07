@@ -7,5 +7,7 @@ redis>=5.0
 mypy
 PyYAML
 
+matplotlib
+
 ruff
 black
