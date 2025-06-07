@@ -36,7 +36,7 @@ class SourceStore:
             return False
         added = self.r.sadd("sources", url) == 1
         if added:
-            self._flush_to_yaml()
+            self.needs_flush = True
         return added
 
     def remove(self, token: str) -> str | None:
