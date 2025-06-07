@@ -11,22 +11,20 @@ import sys
 class ChatMemory:
     def __init__(self) -> None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.r: Optional[redis.Redis[str]] = None
         if url == "not_set":
             print(
                 "[chat_store] Redis URL not configured, chat history will not persist",
                 file=sys.stderr,
             )
-            self.r = None
         else:
             try:
-                self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
-                    url, decode_responses=True
-                )
+                redis_client = redis.Redis.from_url(url, decode_responses=True)
                 # Test connection
-                self.r.ping()
+                redis_client.ping()
+                self.r = redis_client
             except Exception as e:
                 print(f"[chat_store] Redis connection failed: {e}", file=sys.stderr)
-                self.r = None
         self.ttl = int(os.getenv("CHAT_TTL_MINUTES", "30"))
 
     def _key(self, user_id: int) -> str:
