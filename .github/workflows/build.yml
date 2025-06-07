@@ -14,21 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -e .
-      - run: |
-          # install stub packages for mypy strict mode
-          pip install types-PyYAML types-requests openai
-      - run: pip install ruff black mypy pytest
-      - run: ruff check . --fix
-      - run: black --check .
-      - run: mypy --strict miles/
-      - name: Install dependencies
+      - name: Install dependencies and run checks
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -e .[dev]
+          ruff check .
+          black --check .
+          mypy --strict miles/
+          pytest
       - name: Set image tag (lower-case repo)
         id: prep
         run: |
@@ -40,6 +36,6 @@ jobs:
           docker build -t ${{ steps.prep.outputs.image }} .
           docker push ${{ steps.prep.outputs.image }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.11.0
+        uses: aquasecurity/trivy-action@v0.31.0
         with:
           image-ref: ${{ steps.prep.outputs.image }}

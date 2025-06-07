@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - run: pip install -e .[dev]
       - run: pre-commit run --all-files
       - run: pytest --cov=miles --cov-report=xml
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@v0.11.0
+      - uses: aquasecurity/trivy-action@v0.31.0
         with:
           scan-type: fs
           ignore-unfixed: true
