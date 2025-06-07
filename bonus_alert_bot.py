@@ -6,19 +6,18 @@ Monitor official mileage program pages for point transfer bonuses and alert a
 Telegram chat when a new promotion is detected.
 """
 from __future__ import annotations
-
 import os
 import re
+import json
 import time
 import warnings
-from typing import Any
-import hashlib
-import yaml
-from urllib.parse import urlparse
-
-import feedparser
 import requests
-from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning, Tag
+import feedparser
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+from urllib.parse import urlparse
+from bs4.element import Tag
+import hashlib
+from miles.source_store import SourceStore
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
@@ -27,13 +26,7 @@ MIN_BONUS = int(os.getenv("MIN_BONUS", 80))
 DEBUG_ALWAYS = os.getenv("DEBUG_MODE", "False") == "True"
 TIMEOUT = 25
 
-SOURCES_PATH = "sources.yaml"
-try:
-    with open(SOURCES_PATH) as f:
-        SOURCES: list[str] = yaml.safe_load(f)
-except FileNotFoundError:
-    SOURCES = []
-
+STORE = SourceStore(os.getenv("SOURCES_PATH", "sources.yaml"))
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
 PROXY_TPL = [
@@ -43,6 +36,21 @@ PROXY_TPL = [
 
 BONUS_PCT_RE = re.compile(r"(?P<pct>\d{2,3})\s*%.*?(b[oô]nus|bonus)", re.I)
 DOBRO_RE = re.compile(r"\b(dobro|duplicar|2x)\b", re.I)
+
+# Regex helpers for optional extraction
+PCT_RE = re.compile(r"(\d{2,3})%")
+URL_RE = re.compile(r"https?://\S+")
+
+
+def extract_pct(text: str) -> str | None:
+    m = PCT_RE.search(text)
+    return m.group(1) if m else None
+
+
+def extract_url(text: str) -> str | None:
+    m = URL_RE.search(text)
+    return m.group(0) if m else None
+
 
 # ----------------- UTIL ----------------------------
 
@@ -60,7 +68,9 @@ def fetch(url: str) -> str | None:
     return None
 
 
-def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]) -> None:
+def parse_feed(
+    name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]
+) -> None:
     raw = fetch(url)
     if not raw:
         return
@@ -73,10 +83,16 @@ def parse_feed(name: str, url: str, seen: set[str], alerts: list[tuple[int, str,
             handle_text(name, text, link, seen, alerts)
     else:
         soup = BeautifulSoup(raw, "html.parser")
+
         for itm in soup.find_all(["item", "article", "entry", "h2", "h3"]):
             item = itm if isinstance(itm, Tag) else Tag(name="")
             text = item.get_text(" ")[:400]
-            link = getattr(item.find("a"), "href", url)
+            a_tag = item.find("a")
+            if isinstance(a_tag, Tag):
+                href = a_tag.get("href")
+                link = href if isinstance(href, str) else url
+            else:
+                link = url
             handle_text(name, text, link, seen, alerts)
 
 
@@ -109,8 +125,10 @@ def handle_text(
 
 
 def send_telegram(msg: str, chat_id: str | None = None) -> None:
-    token = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat = chat_id or os.environ["TELEGRAM_CHAT_ID"]
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat = chat_id or os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        raise RuntimeError("Telegram credentials are missing")
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     r = requests.post(
         url,
@@ -125,6 +143,35 @@ def send_telegram(msg: str, chat_id: str | None = None) -> None:
     r.raise_for_status()
 
 
+# ----------------- STORE ---------------------------
+
+
+class Store:
+    def __init__(self, path: str = "seen_alerts.json"):
+        self.path = path
+        try:
+            with open(self.path, "r") as f:
+                self._data = set(json.load(f))
+        except (FileNotFoundError, json.JSONDecodeError):
+            self._data = set()
+
+    def has(self, key: str) -> bool:
+        return key in self._data
+
+    def add(self, key: str) -> None:
+        self._data.add(key)
+        self._save()
+
+    def _save(self) -> None:
+        """Save the alerts to a JSON file."""
+        with open(self.path, "w") as f:
+            json.dump(list(self._data), f)
+
+
+def get_store() -> Store:
+    return Store()
+
+
 # ----------------- MAIN ----------------------------
 
 
@@ -132,15 +179,12 @@ def scan_programs(seen: set[str]) -> list[tuple[int, str, str]]:
     """Check all program sources and return found alerts."""
     alerts: list[tuple[int, str, str]] = []
     print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
-    for url in SOURCES:
+    for url in STORE.all():
         name = urlparse(url).netloc
         parse_feed(name, url, seen, alerts)
     if DEBUG_ALWAYS and not alerts:
         alerts.append((0, "Debug", "https://example.com"))
     return alerts
-
-
-from miles.storage import get_store
 
 
 def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
@@ -152,7 +196,7 @@ def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
         h = hashlib.sha1(f"{pct}{link}".encode()).hexdigest()
         if store.has(h):
             continue
-        line = f"\U0001F4E3 {pct}% \xb7 {src}\n{link}"
+        line = f"\U0001f4e3 {pct}% \xb7 {src}\n{link}"
         try:
             send_telegram(line, chat_id)
         except Exception as e:
@@ -164,9 +208,7 @@ def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
 def main() -> None:
     start = time.time()
     alerts = run_scan()
-    print(
-        f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}"
-    )
+    print(f"[INFO] Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}")
 
 
 if __name__ == "__main__":

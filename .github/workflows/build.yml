@@ -12,16 +12,29 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
           python-version: '3.12'
       - run: pip install -e .
-      - run: pip install mypy pytest
+      - run: |
+          # install stub packages for mypy strict mode
+          pip install types-PyYAML types-requests openai types-openai
+      - run: pip install ruff black mypy pytest
+      - run: ruff check .
+      - run: black --check .
       - run: mypy --strict miles/
-      - run: pytest -q
-      - name: Build and push
+      - name: Install dependencies
         run: |
-          IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }}
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Set image tag (lower-case repo)
+        id: prep
+        run: |
+          REPO_LOWER=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ github.sha }}" >> $GITHUB_OUTPUT
+      - name: Build and push image
+        run: |
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker build -t $IMAGE .
-          docker push $IMAGE
+          docker build -t ${{ steps.prep.outputs.image }} .
+          docker push ${{ steps.prep.outputs.image }}

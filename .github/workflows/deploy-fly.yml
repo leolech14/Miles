@@ -12,6 +12,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: "Push secrets to Fly"
+        run: |
+          fly secrets set \
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+            TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
+            MIN_BONUS=${{ secrets.MIN_BONUS }} \
+            REDIS_URL=${{ secrets.REDIS_URL }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - uses: superfly/flyctl-actions@1.5
         with:
           args: "deploy --remote-only"
@@ -21,3 +31,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           MIN_BONUS: ${{ secrets.MIN_BONUS }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

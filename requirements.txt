@@ -7,3 +7,5 @@ redis>=5.0
 mypy
 PyYAML
 
+matplotlib
+pytest
