@@ -40,7 +40,6 @@ def plot_heatmap(counts: dict[str, list[int]]) -> None:
     plt.tight_layout()
     plt.savefig("stats/heatmap.png")
 
-
 def main() -> None:
     counts: dict[str, list[int]] = load_data()
     plot_heatmap(counts)

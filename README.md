@@ -33,7 +33,12 @@ To run everything locally:
 docker compose up
 ```
 
-After cloning the repository, run `pip install -e .[dev] && pre-commit install` to enable local checks.
+After cloning the repository, install the development extras and run the checks:
+
+```bash
+pip install -e .[dev]
+pre-commit run --all-files
+```
 
 Edit `sources.yaml` to change which pages are scanned.
 
