@@ -27,7 +27,11 @@ dev = [
     "pytest-cov",
     "pytest-xdist",
     "mypy",
+<<<<<<< HEAD
     "openai>=0.27,<1.0",
+=======
+    "openai>=0.21,<1.0",
+>>>>>>> 8a6cce9 (ruff --fix: fix ruff issues)
     "pdfplumber",
     "types-PyYAML>=6.0.12",
     "types-requests>=2.31.0.20240406",
