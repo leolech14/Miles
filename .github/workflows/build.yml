@@ -19,7 +19,7 @@ jobs:
       - run: pip install -e .
       - run: |
           # install stub packages for mypy strict mode
-          pip install types-PyYAML types-requests
+          pip install types-PyYAML types-requests openai types-openai
       - run: pip install ruff black mypy pytest
       - run: ruff check .
       - run: black --check .

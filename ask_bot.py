@@ -5,15 +5,26 @@ from __future__ import annotations
 import os
 
 import asyncio
+import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+import openai
+from miles.chat_store import ChatMemory
 
 from miles.scheduler import setup_scheduler
 from miles.source_search import update_sources
 from miles.source_store import SourceStore
 
 import bonus_alert_bot as bot
-from typing import Any
+import yaml
+import requests
+from urllib.parse import urlparse
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    logging.warning("OPENAI_API_KEY is not set; /chat may not work")
+memory = ChatMemory()
 
 store = SourceStore()
 
@@ -82,30 +93,38 @@ async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(msg)
 
 
-async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Reply using OpenAI ChatCompletion."""
-    if not update.message:
-        return
-    text = update.message.text or ""
-    parts = text.split(" ", 1)
+async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    text = update.message.text
+    parts = text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text("Usage: /chat <message>")
         return
-    await update.message.reply_text("Thinking...")
-    try:
-        import openai
+    user_id = update.effective_user.id
+    user_msgs = memory.get(user_id)
+    user_msgs.append({"role": "user", "content": parts[1]})
 
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        resp: Any = await asyncio.to_thread(
-            openai.ChatCompletion.create,
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": parts[1]}],
+    try:
+        resp = await asyncio.to_thread(
+            openai.chat.completions.create,
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=user_msgs[-20:],
+            stream=False,
+            temperature=0.7,
         )
-        msg = resp["choices"][0]["message"]["content"].strip()
-    except Exception as e:  # pragma: no cover - network usage
-        await update.message.reply_text(f"Error: {e}")
+        reply = resp.choices[0].message.content
+    except Exception as e:
+        logging.exception("OpenAI call failed")
+        await update.message.reply_text(f"Error: {e.__class__.__name__}: {e}")
         return
-    await update.message.reply_text(msg)
+
+    user_msgs.append({"role": "assistant", "content": reply})
+    memory.save(user_id, user_msgs[-20:])
+    await update.message.reply_text(reply)
+
+
+async def handle_end(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    memory.clear(update.effective_user.id)
+    await update.message.reply_text("\u2702\ufe0f  Chat ended.")
 
 
 async def _post_init(app: object) -> None:
@@ -122,7 +141,8 @@ def main() -> None:
     app.add_handler(CommandHandler("addsrc", handle_addsrc))
     app.add_handler(CommandHandler("rmsrc", handle_rmsrc))
     app.add_handler(CommandHandler("update", update))
-    app.add_handler(CommandHandler("chat", chat))
+    app.add_handler(CommandHandler("chat", handle_chat))
+    app.add_handler(CommandHandler("end", handle_end))
     app.run_polling()
 
 
