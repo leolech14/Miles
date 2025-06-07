@@ -13,6 +13,11 @@ repos:
     hooks:
       - id: mypy
         args: ["--strict", "miles"]
+        pass_filenames: false
+        additional_dependencies:
+          - types-requests
+          - types-PyYAML
+          - types-redis
   - repo: local
     hooks:
       - id: pytest
