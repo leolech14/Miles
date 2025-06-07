@@ -15,7 +15,7 @@ jobs:
       - name: "Install Fly CLI"
         run: |
           curl -L https://fly.io/install.sh | sh
-          export PATH=$PATH:$HOME/.fly/bin # Add Fly CLI to PATH
+          echo 'export PATH=$PATH:$HOME/.fly/bin' >> $GITHUB_ENV # Persist Fly CLI path
       - name: "Push secrets to Fly"
         run: |
           fly secrets set \
