@@ -9,6 +9,7 @@ Environment variables:
 - `TELEGRAM_CHAT_ID` – default chat to notify
 - `MIN_BONUS` – minimum bonus percentage to alert (default 80)
 - `SOURCES_PATH` – path to the YAML file with program sources
+- `OPENAI_API_KEY` – required for the `/chat` command
 
 ## Quick start
 
@@ -44,6 +45,12 @@ The companion command bot provides a few utilities:
 - `/sources` – check if each source page is online
 - `/update` – search the web for new sources
 - `/chat <text>` – talk with the integrated AI assistant
+
+## ChatGPT mode
+
+Use `/chat <message>` to converse with the bot. The conversation is kept per
+Telegram user in Redis for up to 30 minutes. Send `/end` to clear the stored
+context. Set `OPENAI_API_KEY` to enable this feature.
 
 ## Example sources
 
