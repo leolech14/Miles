@@ -12,7 +12,7 @@ class ChatMemory:
     def __init__(self) -> None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         try:
-            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(  # type: ignore[type-arg]
+            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
                 url, decode_responses=True
             )
             # Test connection

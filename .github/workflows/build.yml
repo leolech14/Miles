@@ -36,6 +36,6 @@ jobs:
           docker build -t ${{ steps.prep.outputs.image }} .
           docker push ${{ steps.prep.outputs.image }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.31.0
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: ${{ steps.prep.outputs.image }}

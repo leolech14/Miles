@@ -40,13 +40,14 @@ if not OPENAI_API_KEY:
         "OPENAI_API_KEY is missing. Please update your environment variables."
     )
 
+openai.api_key = OPENAI_API_KEY
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 # Initialize OpenAI client with proper API key
 client = OpenAI(api_key=OPENAI_API_KEY)
 memory = ChatMemory()
 
-# Clean up OpenAI client initialization
+# Clean up OpenAI client initialization 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 store = SourceStore()
 
