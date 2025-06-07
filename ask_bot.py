@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """Telegram command bot to trigger manual scans."""
 from __future__ import annotations
@@ -91,11 +92,24 @@ async def handle_rmsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Usage: /rmsrc <index|url>")
         return
     target = parts[1].strip()
-    removed = store.remove(target)
-    if removed:
-        await update.message.reply_text(f"🗑️ removed: {removed}")
-    else:
-        await update.message.reply_text("Not found.")
+    try:
+        # Check if target is an index
+        if target.isdigit():
+            idx = int(target) - 1
+            sources = store.all()
+            if 0 <= idx < len(sources):
+                target = sources[idx]
+            else:
+                await update.message.reply_text("Invalid index.")
+                return
+        
+        removed = store.remove(target)
+        if removed:
+            await update.message.reply_text(f"🗑️ removed: {removed}")
+        else:
+            await update.message.reply_text("Not found.")
+    except Exception as e:
+        await update.message.reply_text(f"Error: {str(e)}")
 
 
 async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
