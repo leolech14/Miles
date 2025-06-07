@@ -36,14 +36,16 @@ After cloning the repository, run `pre-commit install` to enable local checks.
 
 Edit `sources.yaml` to change which pages are scanned.
 
-### Telegram commands
+### Runtime commands
 
-The companion command bot provides a few utilities:
-
-- `/ask` – run an immediate promotion scan
-- `/sources` – check if each source page is online
-- `/update` – search the web for new sources
-- `/chat <text>` – talk with the integrated AI assistant
+| Command | Action |
+|---------|--------|
+| `/ask` | Run an immediate promotion scan |
+| `/sources` | List current sources |
+| `/addsrc <url>` | Add a new source URL |
+| `/rmsrc <id_or_url>` | Remove a source by index or full URL |
+| `/update` | Search the web for new sources |
+| `/chat <text>` | Talk with the integrated AI assistant |
 
 ## Example sources
 

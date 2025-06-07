@@ -14,10 +14,10 @@ import warnings
 import requests
 import feedparser
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
-import yaml
 from urllib.parse import urlparse
 from bs4.element import Tag
 import hashlib
+from miles.source_store import SourceStore
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
@@ -26,12 +26,7 @@ MIN_BONUS = int(os.getenv("MIN_BONUS", 80))
 DEBUG_ALWAYS = os.getenv("DEBUG_MODE", "False") == "True"
 TIMEOUT = 25
 
-SOURCES_PATH = os.getenv("SOURCES_PATH", "sources.yaml")
-try:
-    with open(SOURCES_PATH) as f:
-        SOURCES: list[str] = yaml.safe_load(f)
-except FileNotFoundError:
-    SOURCES = []
+STORE = SourceStore(os.getenv("SOURCES_PATH", "sources.yaml"))
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
 PROXY_TPL = [
@@ -184,7 +179,7 @@ def scan_programs(seen: set[str]) -> list[tuple[int, str, str]]:
     """Check all program sources and return found alerts."""
     alerts: list[tuple[int, str, str]] = []
     print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
-    for url in SOURCES:
+    for url in STORE.all():
         name = urlparse(url).netloc
         parse_feed(name, url, seen, alerts)
     if DEBUG_ALWAYS and not alerts:
