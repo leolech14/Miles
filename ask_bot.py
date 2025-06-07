@@ -130,9 +130,11 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             temperature=0.7,
         )
         reply = resp.choices[0].message.content
+    except openai.error.OpenAIError as e:
+        await update.message.reply_text("OpenAI API error. Please try again later.")
+        return
     except Exception as e:
-        logging.exception("OpenAI call failed")
-        await update.message.reply_text(f"Error: {e.__class__.__name__}: {e}")
+        await update.message.reply_text("Unexpected error. Please contact support.")
         return
 
     user_msgs.append({"role": "assistant", "content": reply})

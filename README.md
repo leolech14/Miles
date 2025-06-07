@@ -86,6 +86,18 @@ context. Set `OPENAI_API_KEY` to enable this feature.
   > "Azul Fidelidade oferece até 80% de bônus na transferência de pontos – veja como participar"<br>
   Fonte: <https://guiadomilheiro.com.br/azul-fidelidade-oferece-ate-80-de-bonus-na-transferencia-de-pontos-veja-como-participar/>
 
+## Architecture
+
+```mermaid
+flowchart TD
+    User-->|Telegram|Bot
+    Bot-->|/ask, /sources, /addsrc|Core
+    Core-->|Scrape|Sources
+    Core-->|Chat|OpenAI
+    Core-->|Store context|Redis
+    CI-->|Build/Test/Deploy|Docker
+```
+
 ## Development
 
 Run the checks before committing:

@@ -10,6 +10,12 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     depends_on:
       - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
   redis:
     image: redis:7-alpine
     volumes:

@@ -39,3 +39,7 @@ jobs:
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker build -t ${{ steps.prep.outputs.image }} .
           docker push ${{ steps.prep.outputs.image }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.13.1
+        with:
+          image-ref: ${{ steps.prep.outputs.image }}
