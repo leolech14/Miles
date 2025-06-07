@@ -2,7 +2,7 @@ import os
 import redis
 import yaml
 import logging
-from typing import List
+from typing import List, Optional
 import sys
 
 
@@ -11,7 +11,9 @@ class SourceStore:
         self.yaml_path = yaml_path
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         try:
-            self.r = redis.Redis.from_url(url, decode_responses=True)
+            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
+                url, decode_responses=True
+            )
             self.r.ping()
         except Exception as e:
             print(f"[source_store] Redis connection failed: {e}", file=sys.stderr)
@@ -20,6 +22,8 @@ class SourceStore:
             self._bootstrap_from_yaml()
 
     def _bootstrap_from_yaml(self) -> None:
+        if not self.r:
+            return
         try:
             with open(self.yaml_path) as f:
                 data: List[str] = yaml.safe_load(f) or []

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta  # noqa: F401
 import json
 import os
-from typing import cast
+from typing import cast, Optional
 import redis
 import sys
 
@@ -12,7 +12,9 @@ class ChatMemory:
     def __init__(self) -> None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         try:
-            self.r = redis.Redis.from_url(url, decode_responses=True)
+            self.r: Optional[redis.Redis[str]] = redis.Redis.from_url(
+                url, decode_responses=True
+            )
             # Test connection
             self.r.ping()
         except Exception as e:

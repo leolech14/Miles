@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sys
 
 import asyncio
 import logging
@@ -18,9 +17,6 @@ from miles.source_search import update_sources
 from miles.source_store import SourceStore
 
 import bonus_alert_bot as bot
-import yaml
-import requests
-from urllib.parse import urlparse
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
