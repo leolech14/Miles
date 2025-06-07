@@ -13,7 +13,7 @@ import time
 import warnings
 import hashlib
 import yaml
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 import feedparser
 import requests
@@ -98,6 +98,7 @@ def parse_feed(
             if isinstance(a_tag, Tag):
                 href = a_tag.get("href")
                 link = href if isinstance(href, str) else url
+                
             else:
                 link = url
             handle_text(name, text, link, seen, alerts)
