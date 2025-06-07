@@ -97,10 +97,8 @@ def parse_feed(
             a_tag = item.find("a")
             if isinstance(a_tag, Tag):
                 href = a_tag.get("href")
-                if isinstance(href, str):
-                    link = urljoin(url, href)
-                else:
-                    link = url
+                link = href if isinstance(href, str) else url
+                
             else:
                 link = url
             handle_text(name, text, link, seen, alerts)
