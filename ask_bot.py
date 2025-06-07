@@ -29,9 +29,11 @@ print(f"[ask_bot] TELEGRAM_BOT_TOKEN set: {'TELEGRAM_BOT_TOKEN' in os.environ}")
 print(f"[ask_bot] REDIS_URL: {os.getenv('REDIS_URL')}")
 print(f"[ask_bot] OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-if not openai.api_key:
-    logging.warning("OPENAI_API_KEY is not set; /chat may not work")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY is missing. Please update your environment variables.")
+
+openai.api_key = OPENAI_API_KEY
 memory = ChatMemory()
 
 store = SourceStore()
