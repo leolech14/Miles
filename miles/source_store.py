@@ -34,7 +34,9 @@ class SourceStore:
         if not url.startswith("http") or len(url) > 200:
             logging.warning("Rejected invalid URL: %s", url)
             return False
-        added: bool = self.r.sadd("sources", url) == 1  # Explicitly define `added` as bool
+        added: bool = (
+            self.r.sadd("sources", url) == 1
+        )  # Explicitly define `added` as bool
         if added:
             self.needs_flush = True
         return added
