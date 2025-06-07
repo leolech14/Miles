@@ -36,3 +36,7 @@ jobs:
           MIN_BONUS: ${{ secrets.MIN_BONUS }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Check Machine Status
+        run: fly machine status -i 080137ef300d58 || true
+      - name: Retrieve Machine Logs
+        run: fly logs -i 080137ef300d58 || true
