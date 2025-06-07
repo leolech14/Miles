@@ -167,7 +167,8 @@ class Store:
         self._data.add(key)
         self._save()
 
-    def _save(self):
+    def _save(self) -> None:
+        """Save the alerts to a JSON file."""
         with open(self.path, "w") as f:
             json.dump(list(self._data), f)
 
