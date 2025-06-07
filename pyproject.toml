@@ -16,6 +16,7 @@ dependencies = [
     "APScheduler>=3.10",
     "redis>=5.0",
     "PyYAML",
+    "openai>=1.27,<2.0",
 ]
 
 [project.optional-dependencies]
@@ -27,7 +28,7 @@ dev = [
     "pytest-cov",
     "pytest-xdist",
     "mypy",
-    "openai>=0.21,<1.0",
+    "types-openai>=0.3",
     "pdfplumber",
     "types-PyYAML>=6.0.12",
     "types-requests>=2.31.0.20240406",
