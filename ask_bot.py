@@ -20,9 +20,12 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 print("[ask_bot] Starting up...")
+print(f"[ask_bot] Python version: {__import__('sys').version}")
+print(f"[ask_bot] Working directory: {os.getcwd()}")
 print(f"[ask_bot] TELEGRAM_BOT_TOKEN set: {'TELEGRAM_BOT_TOKEN' in os.environ}")
-print(f"[ask_bot] REDIS_URL: {os.getenv('REDIS_URL')}")
+print(f"[ask_bot] REDIS_URL: {os.getenv('REDIS_URL', 'NOT_SET')}")
 print(f"[ask_bot] OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
+print(f"[ask_bot] PORT env var: {os.getenv('PORT', 'NOT_SET')}")
 
 REQUIRED_ENV_VARS = [
     "OPENAI_API_KEY",
@@ -30,24 +33,40 @@ REQUIRED_ENV_VARS = [
     "TELEGRAM_CHAT_ID",
     "REDIS_URL",
 ]
-missing = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
-if missing:
-    raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError(
-        "OPENAI_API_KEY is missing. Please update your environment variables."
+
+def check_environment_variables():
+    """Check required environment variables and exit if missing"""
+    print(
+        f"[ask_bot] Checking required environment variables: {', '.join(REQUIRED_ENV_VARS)}"
     )
+    missing = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+    if missing:
+        print(
+            f"[ask_bot] ERROR: Missing required environment variables: {', '.join(missing)}"
+        )
+        raise SystemExit(
+            f"Missing required environment variables: {', '.join(missing)}"
+        )
+    print("[ask_bot] All required environment variables are set")
 
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
-# Initialize OpenAI client with proper API key
-client = OpenAI(api_key=OPENAI_API_KEY)
+
+# Environment variables will be checked in main
+
+
+def get_openai_client():
+    """Get OpenAI client, checking for API key"""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY is missing. Please update your environment variables."
+        )
+    return OpenAI(api_key=api_key)
+
+
+# Initialize components - OpenAI client will be set in main()
+openai_client = None
 memory = ChatMemory()
-
-# Clean up OpenAI client initialization
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
 store = SourceStore()
 
 
@@ -162,7 +181,16 @@ async def handle_end(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def _post_init(app: object) -> None:
-    setup_scheduler()
+    try:
+        print("[ask_bot] Setting up scheduler...")
+        setup_scheduler()
+        print("[ask_bot] Scheduler setup complete")
+    except Exception as e:
+        print(f"[ask_bot] Scheduler setup failed: {e}")
+        import traceback
+
+        traceback.print_exc()
+        # Don't raise - continue without scheduler
 
 
 class HealthHandler(BaseHTTPRequestHandler):
@@ -178,20 +206,58 @@ def start_health_server():
 
 
 def main() -> None:
-    start_health_server()  # Start HTTP health server for Fly.io
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        raise SystemExit("TELEGRAM_BOT_TOKEN is not set")
-    app = ApplicationBuilder().token(token).post_init(_post_init).build()
-    app.add_handler(CommandHandler("ask", ask))
-    app.add_handler(CommandHandler("sources", handle_sources))
-    app.add_handler(CommandHandler("addsrc", handle_addsrc))
-    app.add_handler(CommandHandler("rmsrc", handle_rmsrc))
-    app.add_handler(CommandHandler("update", update))
-    app.add_handler(CommandHandler("chat", handle_chat))
-    app.add_handler(CommandHandler("end", handle_end))
-    app.run_polling()
+    print("[ask_bot] Starting main function...")
+
+    try:
+        print("[ask_bot] Initializing OpenAI client...")
+        global openai_client
+        openai_client = get_openai_client()
+        print("[ask_bot] OpenAI client initialized")
+
+        print("[ask_bot] Starting health server...")
+        start_health_server()  # Start HTTP health server for Fly.io
+        print("[ask_bot] Health server started on port 8080")
+
+        print("[ask_bot] Checking Telegram token...")
+        token = os.getenv("TELEGRAM_BOT_TOKEN")
+        if not token:
+            raise SystemExit("TELEGRAM_BOT_TOKEN is not set")
+        print("[ask_bot] Telegram token found")
+
+        print("[ask_bot] Building Telegram application...")
+        app = ApplicationBuilder().token(token).post_init(_post_init).build()
+
+        print("[ask_bot] Adding command handlers...")
+        app.add_handler(CommandHandler("ask", ask))
+        app.add_handler(CommandHandler("sources", handle_sources))
+        app.add_handler(CommandHandler("addsrc", handle_addsrc))
+        app.add_handler(CommandHandler("rmsrc", handle_rmsrc))
+        app.add_handler(CommandHandler("update", update))
+        app.add_handler(CommandHandler("chat", handle_chat))
+        app.add_handler(CommandHandler("end", handle_end))
+
+        print("[ask_bot] Starting Telegram bot polling...")
+        app.run_polling()
+    except Exception as e:
+        print(f"[ask_bot] Fatal error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        raise
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        check_environment_variables()
+        main()
+    except KeyboardInterrupt:
+        print("[ask_bot] Received keyboard interrupt, shutting down...")
+    except SystemExit as e:
+        print(f"[ask_bot] System exit: {e}")
+        raise
+    except Exception as e:
+        print(f"[ask_bot] Unexpected error in main: {e}")
+        import traceback
+
+        traceback.print_exc()
+        raise

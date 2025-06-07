@@ -12,6 +12,19 @@ primary_region = 'iad'
 [env]
   PYTHONUNBUFFERED = '1'
 
+[http_service]
+  internal_port = 8080
+  force_https = false
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  path = "/"
+  port = 8080
+  protocol = "http"
+  timeout = "5s"
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
