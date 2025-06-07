@@ -6,7 +6,10 @@ import yaml
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from bonus_alert_bot import send_telegram, HEADERS, SOURCES_PATH
+from bonus_alert_bot import send_telegram, HEADERS
+import os
+
+SOURCES_PATH = os.getenv("SOURCES_PATH", "sources.yaml")
 
 
 QUERY = "transferencia de pontos bonus milhas"

@@ -14,6 +14,7 @@ from miles.chat_store import ChatMemory
 
 from miles.scheduler import setup_scheduler
 from miles.source_search import update_sources
+from miles.source_store import SourceStore
 
 import bonus_alert_bot as bot
 import yaml
@@ -24,6 +25,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     logging.warning("OPENAI_API_KEY is not set; /chat may not work")
 memory = ChatMemory()
+
+store = SourceStore()
 
 
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -37,40 +40,44 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
 
-def _diagnose_sources() -> list[str]:
-    """Return a list of formatted source status lines."""
-    path = os.getenv("SOURCES_PATH", "sources.yaml")
-    try:
-        with open(path) as f:
-            urls: list[str] = yaml.safe_load(f)
-    except Exception:
-        return []
-    results = []
-    for url in urls:
-        name = urlparse(url).netloc
-        try:
-            r = requests.head(
-                url, headers=bot.HEADERS, timeout=10, allow_redirects=True
-            )
-            if r.status_code >= 400:
-                raise ValueError(r.status_code)
-        except Exception:
-            results.append(f"\u274c {name} - {url}")
-        else:
-            results.append(f"\u2705 {name} - {url}")
-    return results
-
-
-async def sources(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Report which sources are responding."""
-    if not update.message:
+async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    lst = store.all()
+    if not lst:
+        await update.message.reply_text("⚠️  No sources configured.")
         return
-    await update.message.reply_text("Checking sources, please wait...")
-    lines = await asyncio.to_thread(_diagnose_sources)
-    if not lines:
-        await update.message.reply_text("No sources found.")
-        return
+    if len(lst) > 50:
+        extra = len(lst) - 50
+        lst = lst[:50]
+        lines = [f"{i+1}. {u}" for i, u in enumerate(lst)]
+        lines.append(f"… and {extra} more")
+    else:
+        lines = [f"{i+1}. {u}" for i, u in enumerate(lst)]
     await update.message.reply_text("\n".join(lines))
+
+
+async def handle_addsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    parts = update.message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await update.message.reply_text("Usage: /addsrc <url>")
+        return
+    url = parts[1].strip()
+    if store.add(url):
+        await update.message.reply_text("✅ added.")
+    else:
+        await update.message.reply_text("Already present or invalid.")
+
+
+async def handle_rmsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    parts = update.message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await update.message.reply_text("Usage: /rmsrc <index|url>")
+        return
+    target = parts[1].strip()
+    removed = store.remove(target)
+    if removed:
+        await update.message.reply_text(f"🗑️ removed: {removed}")
+    else:
+        await update.message.reply_text("Not found.")
 
 
 async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -130,7 +137,9 @@ def main() -> None:
         raise SystemExit("TELEGRAM_BOT_TOKEN is not set")
     app = ApplicationBuilder().token(token).post_init(_post_init).build()
     app.add_handler(CommandHandler("ask", ask))
-    app.add_handler(CommandHandler("sources", sources))
+    app.add_handler(CommandHandler("sources", handle_sources))
+    app.add_handler(CommandHandler("addsrc", handle_addsrc))
+    app.add_handler(CommandHandler("rmsrc", handle_rmsrc))
     app.add_handler(CommandHandler("update", update))
     app.add_handler(CommandHandler("chat", handle_chat))
     app.add_handler(CommandHandler("end", handle_end))
