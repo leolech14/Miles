@@ -1,0 +1,54 @@
+﻿2025-06-07T21:16:09.1789031Z Current runner version: '2.325.0'
+2025-06-07T21:16:09.1818331Z ##[group]Operating System
+2025-06-07T21:16:09.1819068Z Ubuntu
+2025-06-07T21:16:09.1819542Z 24.04.2
+2025-06-07T21:16:09.1820083Z LTS
+2025-06-07T21:16:09.1820555Z ##[endgroup]
+2025-06-07T21:16:09.1821049Z ##[group]Runner Image
+2025-06-07T21:16:09.1821683Z Image: ubuntu-24.04
+2025-06-07T21:16:09.1822213Z Version: 20250602.3.0
+2025-06-07T21:16:09.1823466Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250602.3/images/ubuntu/Ubuntu2404-Readme.md
+2025-06-07T21:16:09.1824911Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250602.3
+2025-06-07T21:16:09.1825751Z ##[endgroup]
+2025-06-07T21:16:09.1826257Z ##[group]Runner Image Provisioner
+2025-06-07T21:16:09.1826925Z 2.0.437.1
+2025-06-07T21:16:09.1827347Z ##[endgroup]
+2025-06-07T21:16:09.1828364Z ##[group]GITHUB_TOKEN Permissions
+2025-06-07T21:16:09.1830467Z Contents: read
+2025-06-07T21:16:09.1830968Z Metadata: read
+2025-06-07T21:16:09.1831725Z Packages: write
+2025-06-07T21:16:09.1832288Z ##[endgroup]
+2025-06-07T21:16:09.1834754Z Secret source: Actions
+2025-06-07T21:16:09.1835467Z Prepare workflow directory
+2025-06-07T21:16:09.2270131Z Prepare all required actions
+2025-06-07T21:16:09.2325531Z Getting action download info
+2025-06-07T21:16:09.5518421Z ##[error]Unable to resolve action `aquasecurity/trivy-action@v0.11.0`, unable to find version `v0.11.0`
+2025-06-07T21:16:04.2783748Z Requested labels: ubuntu-latest
+2025-06-07T21:16:04.2783748Z Job defined at: leolech14/Miles/.github/workflows/build.yml@refs/heads/main
+2025-06-07T21:16:04.2783748Z Waiting for a runner to pick up this job...
+2025-06-07T21:16:04.7663237Z Job is waiting for a hosted runner to come online.
+2025-06-07T21:16:04.7663274Z Job is about to start running on the hosted runner: GitHub Actions 1000001169﻿2025-06-07T21:16:09.1787768Z Current runner version: '2.325.0'
+2025-06-07T21:16:09.1818308Z ##[group]Operating System
+2025-06-07T21:16:09.1819063Z Ubuntu
+2025-06-07T21:16:09.1819539Z 24.04.2
+2025-06-07T21:16:09.1820080Z LTS
+2025-06-07T21:16:09.1820551Z ##[endgroup]
+2025-06-07T21:16:09.1821025Z ##[group]Runner Image
+2025-06-07T21:16:09.1821679Z Image: ubuntu-24.04
+2025-06-07T21:16:09.1822210Z Version: 20250602.3.0
+2025-06-07T21:16:09.1823458Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250602.3/images/ubuntu/Ubuntu2404-Readme.md
+2025-06-07T21:16:09.1824907Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250602.3
+2025-06-07T21:16:09.1825748Z ##[endgroup]
+2025-06-07T21:16:09.1826253Z ##[group]Runner Image Provisioner
+2025-06-07T21:16:09.1826921Z 2.0.437.1
+2025-06-07T21:16:09.1827344Z ##[endgroup]
+2025-06-07T21:16:09.1828360Z ##[group]GITHUB_TOKEN Permissions
+2025-06-07T21:16:09.1830448Z Contents: read
+2025-06-07T21:16:09.1830964Z Metadata: read
+2025-06-07T21:16:09.1831453Z Packages: write
+2025-06-07T21:16:09.1832284Z ##[endgroup]
+2025-06-07T21:16:09.1834733Z Secret source: Actions
+2025-06-07T21:16:09.1835463Z Prepare workflow directory
+2025-06-07T21:16:09.2270089Z Prepare all required actions
+2025-06-07T21:16:09.2325502Z Getting action download info
+2025-06-07T21:16:09.5518388Z ##[error]Unable to resolve action `aquasecurity/trivy-action@v0.11.0`, unable to find version `v0.11.0`
