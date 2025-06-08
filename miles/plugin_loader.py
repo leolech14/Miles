@@ -36,7 +36,7 @@ def discover_plugins() -> Dict[str, Plugin]:
             if plugin_cls is None:
                 logger.error("Plugin class not defined for %s", ep.name)
                 continue
-            plugin: Plugin = plugin_cls()  # type: ignore[call-arg]
+            plugin: Plugin = plugin_cls()
             found[plugin.name] = plugin
             logger.info("Loaded plug-in: %s", plugin.name)
         except Exception:  # noqa: BLE001
