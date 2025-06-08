@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Optional
+from typing import Optional, Any, Dict
 import redis
 
 
@@ -11,7 +11,7 @@ class ScheduleConfig:
     
     def __init__(self) -> None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        self.r: Optional[redis.Redis[str]] = None
+        self.r: Optional[redis.Redis] = None
         if url != "not_set":
             try:
                 redis_client = redis.Redis.from_url(url, decode_responses=True)
@@ -23,7 +23,7 @@ class ScheduleConfig:
     def _key(self) -> str:
         return "schedule:config"
     
-    def get_config(self) -> dict[str, any]:
+    def get_config(self) -> Dict[str, Any]:
         """Get current schedule configuration"""
         default_config = {
             "update_hour": 6,
@@ -60,7 +60,7 @@ class ScheduleConfig:
         config["scan_hours"] = sorted(list(set(hours)))  # Remove duplicates and sort
         return self._save_config(config)
     
-    def _save_config(self, config: dict) -> bool:
+    def _save_config(self, config: Dict[str, Any]) -> bool:
         """Save configuration to Redis"""
         if not self.r:
             return False

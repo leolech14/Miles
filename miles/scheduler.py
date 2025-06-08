@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Optional, Dict, Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from zoneinfo import ZoneInfo
 
@@ -10,7 +11,7 @@ from miles.schedule_config import ScheduleConfig
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-_scheduler: AsyncIOScheduler = None
+_scheduler: Optional[AsyncIOScheduler] = None
 
 
 def setup_scheduler() -> None:
@@ -30,14 +31,16 @@ def setup_scheduler() -> None:
         id="update_sources"
     )
     
-    for hour in config["scan_hours"]:
-        _scheduler.add_job(
-            run_scan, 
-            "cron", 
-            hour=hour, 
-            minute=0,
-            id=f"scan_{hour}"
-        )
+    scan_hours = config["scan_hours"]
+    if isinstance(scan_hours, list):
+        for hour in scan_hours:
+            _scheduler.add_job(
+                run_scan, 
+                "cron", 
+                hour=hour, 
+                minute=0,
+                id=f"scan_{hour}"
+            )
     
     _scheduler.start()
 
@@ -64,21 +67,23 @@ def update_schedule() -> bool:
             id="update_sources"
         )
         
-        for hour in config["scan_hours"]:
-            _scheduler.add_job(
-                run_scan, 
-                "cron", 
-                hour=hour, 
-                minute=0,
-                id=f"scan_{hour}"
-            )
+        scan_hours = config["scan_hours"]
+        if isinstance(scan_hours, list):
+            for hour in scan_hours:
+                _scheduler.add_job(
+                    run_scan, 
+                    "cron", 
+                    hour=hour, 
+                    minute=0,
+                    id=f"scan_{hour}"
+                )
         
         return True
     except Exception:
         return False
 
 
-def get_current_schedule() -> dict:
+def get_current_schedule() -> Dict[str, Any]:
     """Get current schedule configuration"""
     return ScheduleConfig().get_config()
 

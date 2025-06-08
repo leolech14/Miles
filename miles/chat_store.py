@@ -57,7 +57,7 @@ class ChatMemory:
         prefs_raw = self.r.get(self._pref_key(user_id))
         if prefs_raw:
             prefs = json.loads(str(prefs_raw))
-            return prefs.get(key)
+            return str(prefs.get(key)) if prefs.get(key) is not None else None
         return None
     
     def set_user_preference(self, user_id: int, key: str, value: str) -> None:
@@ -73,5 +73,6 @@ class ChatMemory:
             return {}
         prefs_raw = self.r.get(self._pref_key(user_id))
         if prefs_raw:
-            return json.loads(str(prefs_raw))
+            prefs = json.loads(str(prefs_raw))
+            return {k: str(v) for k, v in prefs.items()}
         return {}
