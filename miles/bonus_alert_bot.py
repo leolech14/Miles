@@ -118,6 +118,7 @@ async def call_gpt(prompt: str, max_tokens: int = 1000) -> str:
     # Dummy implementation; replace with actual OpenAI API call as needed
     return f"Echo: {prompt[:max_tokens]}"
 
+
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not _chat_enabled(update.effective_chat.id):
         return
