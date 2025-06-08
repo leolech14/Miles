@@ -47,10 +47,10 @@ class ChatMemory:
         if not self.r:
             return
         self.r.delete(self._key(user_id))
-    
+
     def _pref_key(self, user_id: int) -> str:
         return f"prefs:{user_id}"
-    
+
     def get_user_preference(self, user_id: int, key: str) -> Optional[str]:
         if not self.r:
             return None
@@ -59,7 +59,7 @@ class ChatMemory:
             prefs = json.loads(str(prefs_raw))
             return str(prefs.get(key)) if prefs.get(key) is not None else None
         return None
-    
+
     def set_user_preference(self, user_id: int, key: str, value: str) -> None:
         if not self.r:
             return
@@ -67,7 +67,7 @@ class ChatMemory:
         prefs = json.loads(str(prefs_raw)) if prefs_raw else {}
         prefs[key] = value
         self.r.set(self._pref_key(user_id), json.dumps(prefs), ex=86400 * 30)  # 30 days
-    
+
     def get_all_user_preferences(self, user_id: int) -> dict[str, str]:
         if not self.r:
             return {}

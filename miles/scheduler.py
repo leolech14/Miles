@@ -18,30 +18,24 @@ def setup_scheduler() -> None:
     global _scheduler
     loop = asyncio.get_running_loop()
     _scheduler = AsyncIOScheduler(event_loop=loop, timezone=TIMEZONE)
-    
+
     # Load configuration
     config = ScheduleConfig().get_config()
-    
+
     # Add jobs based on configuration
     _scheduler.add_job(
-        update_sources, 
-        "cron", 
-        hour=config["update_hour"], 
+        update_sources,
+        "cron",
+        hour=config["update_hour"],
         minute=0,
-        id="update_sources"
+        id="update_sources",
     )
-    
+
     scan_hours = config["scan_hours"]
     if isinstance(scan_hours, list):
         for hour in scan_hours:
-            _scheduler.add_job(
-                run_scan, 
-                "cron", 
-                hour=hour, 
-                minute=0,
-                id=f"scan_{hour}"
-            )
-    
+            _scheduler.add_job(run_scan, "cron", hour=hour, minute=0, id=f"scan_{hour}")
+
     _scheduler.start()
 
 
@@ -50,34 +44,30 @@ def update_schedule() -> bool:
     global _scheduler
     if not _scheduler:
         return False
-    
+
     config = ScheduleConfig().get_config()
-    
+
     try:
         # Remove existing jobs
         for job in _scheduler.get_jobs():
             _scheduler.remove_job(job.id)
-        
+
         # Add new jobs
         _scheduler.add_job(
-            update_sources, 
-            "cron", 
-            hour=config["update_hour"], 
+            update_sources,
+            "cron",
+            hour=config["update_hour"],
             minute=0,
-            id="update_sources"
+            id="update_sources",
         )
-        
+
         scan_hours = config["scan_hours"]
         if isinstance(scan_hours, list):
             for hour in scan_hours:
                 _scheduler.add_job(
-                    run_scan, 
-                    "cron", 
-                    hour=hour, 
-                    minute=0,
-                    id=f"scan_{hour}"
+                    run_scan, "cron", hour=hour, minute=0, id=f"scan_{hour}"
                 )
-        
+
         return True
     except Exception:
         return False

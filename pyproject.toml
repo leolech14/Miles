@@ -17,6 +17,8 @@ dependencies = [
     "redis>=5.0",
     "PyYAML",
     "openai>=1.27,<2.0",
+    "fastapi[all]",
+    "uvicorn",
 ]
 
 [project.optional-dependencies]

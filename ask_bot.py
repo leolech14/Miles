@@ -6,7 +6,13 @@ import os
 
 import asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from openai import OpenAI
 from miles.chat_store import ChatMemory
@@ -185,26 +191,28 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if len(parts) < 2:
         await update.message.reply_text("Usage: /chat <message>")
         return
-    
+
     user_id = update.effective_user.id
     user_msgs = memory.get(user_id)
-    
+
     # Add system prompt for bot configuration
     if not user_msgs:
         system_prompt = {
-            "role": "system", 
-            "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can help users configure bot settings, understand commands, and provide general assistance. When users ask about bot configuration, provide helpful guidance."
+            "role": "system",
+            "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can help users configure bot settings, understand commands, and provide general assistance. When users ask about bot configuration, provide helpful guidance.",
         }
         user_msgs.append(system_prompt)
-    
+
     user_msgs.append({"role": "user", "content": parts[1]})
 
     try:
         # Get user preferences for model and temperature
-        model = memory.get_user_preference(user_id, "model") or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        model = memory.get_user_preference(user_id, "model") or os.getenv(
+            "OPENAI_MODEL", "gpt-4o-mini"
+        )
         temperature = float(memory.get_user_preference(user_id, "temperature") or "0.7")
         max_tokens = int(memory.get_user_preference(user_id, "max_tokens") or "1000")
-        
+
         resp = await asyncio.to_thread(
             openai_client.chat.completions.create,
             model=model,
@@ -213,16 +221,16 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        
+
         if not resp.choices or not resp.choices[0].message:
             await update.message.reply_text("❌ Invalid response from OpenAI API.")
             return
-            
+
         reply = resp.choices[0].message.content
         if not reply:
             await update.message.reply_text("❌ Empty response from OpenAI API.")
             return
-            
+
     except Exception as e:
         await update.message.reply_text(f"❌ OpenAI API error: {str(e)}")
         return
@@ -241,11 +249,11 @@ async def handle_config(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show current configuration and available options"""
     user_id = update.effective_user.id
     prefs = memory.get_all_user_preferences(user_id)
-    
+
     current_model = prefs.get("model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
     current_temp = prefs.get("temperature", "0.7")
     current_max_tokens = prefs.get("max_tokens", "1000")
-    
+
     msg = f"""🤖 **Current Configuration**
 
 **OpenAI Settings:**
@@ -268,23 +276,27 @@ async def handle_config(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 • gpt-4-turbo
 • gpt-3.5-turbo"""
 
-    await update.message.reply_text(msg, parse_mode='Markdown')
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 
 async def handle_setmodel(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the OpenAI model for chat"""
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
-        await update.message.reply_text("Usage: /setmodel <model>\nAvailable: gpt-4o-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo")
+        await update.message.reply_text(
+            "Usage: /setmodel <model>\nAvailable: gpt-4o-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo"
+        )
         return
-    
+
     model = parts[1].strip()
     valid_models = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
-    
+
     if model not in valid_models:
-        await update.message.reply_text(f"Invalid model. Available: {', '.join(valid_models)}")
+        await update.message.reply_text(
+            f"Invalid model. Available: {', '.join(valid_models)}"
+        )
         return
-    
+
     user_id = update.effective_user.id
     memory.set_user_preference(user_id, "model", model)
     await update.message.reply_text(f"✅ Model set to: {model}")
@@ -296,18 +308,20 @@ async def handle_settemp(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
     if len(parts) < 2:
         await update.message.reply_text("Usage: /settemp <0.0-2.0>")
         return
-    
+
     try:
         temp = float(parts[1].strip())
         if not 0.0 <= temp <= 2.0:
             await update.message.reply_text("Temperature must be between 0.0 and 2.0")
             return
-        
+
         user_id = update.effective_user.id
         memory.set_user_preference(user_id, "temperature", str(temp))
         await update.message.reply_text(f"✅ Temperature set to: {temp}")
     except ValueError:
-        await update.message.reply_text("Invalid temperature value. Use a number between 0.0 and 2.0")
+        await update.message.reply_text(
+            "Invalid temperature value. Use a number between 0.0 and 2.0"
+        )
 
 
 async def handle_setmaxtokens(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -316,18 +330,20 @@ async def handle_setmaxtokens(update: Update, ctx: ContextTypes.DEFAULT_TYPE) ->
     if len(parts) < 2:
         await update.message.reply_text("Usage: /setmaxtokens <number>")
         return
-    
+
     try:
         max_tokens = int(parts[1].strip())
         if not 100 <= max_tokens <= 4000:
             await update.message.reply_text("Max tokens must be between 100 and 4000")
             return
-        
+
         user_id = update.effective_user.id
         memory.set_user_preference(user_id, "max_tokens", str(max_tokens))
         await update.message.reply_text(f"✅ Max tokens set to: {max_tokens}")
     except ValueError:
-        await update.message.reply_text("Invalid number. Use an integer between 100 and 4000")
+        await update.message.reply_text(
+            "Invalid number. Use an integer between 100 and 4000"
+        )
 
 
 async def handle_import(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -336,21 +352,24 @@ async def handle_import(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if len(parts) < 2:
         await update.message.reply_text("Usage: /import <url_or_text_with_urls>")
         return
-    
+
     import re
+
     url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
     urls = re.findall(url_pattern, parts[1])
-    
+
     if not urls:
         await update.message.reply_text("No valid URLs found in input")
         return
-    
+
     added = 0
     for url in urls:
         if store.add(url):
             added += 1
-    
-    await update.message.reply_text(f"✅ Added {added} new sources from {len(urls)} URLs provided")
+
+    await update.message.reply_text(
+        f"✅ Added {added} new sources from {len(urls)} URLs provided"
+    )
 
 
 async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -359,7 +378,7 @@ async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if not sources:
         await update.message.reply_text("No sources to export")
         return
-    
+
     text = "\n".join(sources)
     if len(text) > 4000:  # Telegram message limit
         # Split into chunks
@@ -367,7 +386,7 @@ async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         lines = sources
         current_chunk = []
         current_length = 0
-        
+
         for line in lines:
             if current_length + len(line) + 1 > 4000:
                 chunks.append("\n".join(current_chunk))
@@ -376,22 +395,28 @@ async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             else:
                 current_chunk.append(line)
                 current_length += len(line) + 1
-        
+
         if current_chunk:
             chunks.append("\n".join(current_chunk))
-        
+
         for i, chunk in enumerate(chunks):
-            await update.message.reply_text(f"📋 **Sources Export (Part {i+1}/{len(chunks)})**\n\n{chunk}", parse_mode='Markdown')
+            await update.message.reply_text(
+                f"📋 **Sources Export (Part {i+1}/{len(chunks)})**\n\n{chunk}",
+                parse_mode="Markdown",
+            )
     else:
-        await update.message.reply_text(f"📋 **Sources Export ({len(sources)} sources)**\n\n{text}", parse_mode='Markdown')
+        await update.message.reply_text(
+            f"📋 **Sources Export ({len(sources)} sources)**\n\n{text}",
+            parse_mode="Markdown",
+        )
 
 
 async def handle_schedule(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show current schedule and allow modifications"""
     config = get_current_schedule()
-    
+
     scan_times = ", ".join(f"{h}:00" for h in config["scan_hours"])
-    
+
     current_schedule = f"""⏰ **Current Schedule** (São Paulo time)
 
 **Source Updates:** {config["update_hour"]}:00 daily
@@ -402,72 +427,86 @@ To modify schedule times, use:
 • `/setupdatetime <hour>` - Set source update time (e.g., 7 for 7AM)
 
 Note: Times are in 24-hour format, São Paulo timezone"""
-    
-    await update.message.reply_text(current_schedule, parse_mode='Markdown')
+
+    await update.message.reply_text(current_schedule, parse_mode="Markdown")
 
 
 async def handle_setscantime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the promotion scan times"""
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
-        await update.message.reply_text("Usage: /setscantime <hours>\nExample: /setscantime 8,20 (for 8AM and 8PM)")
+        await update.message.reply_text(
+            "Usage: /setscantime <hours>\nExample: /setscantime 8,20 (for 8AM and 8PM)"
+        )
         return
-    
+
     try:
         hours_str = parts[1].strip()
         hours = [int(h.strip()) for h in hours_str.split(",")]
-        
+
         if not all(0 <= h <= 23 for h in hours):
             await update.message.reply_text("All hours must be between 0 and 23")
             return
-        
+
         if len(hours) > 6:
             await update.message.reply_text("Maximum 6 scan times per day")
             return
-        
+
         schedule_config = ScheduleConfig()
         if schedule_config.set_scan_times(hours):
             if update_schedule():
                 scan_times = ", ".join(f"{h}:00" for h in sorted(hours))
-                await update.message.reply_text(f"✅ Promotion scan times set to: {scan_times}")
+                await update.message.reply_text(
+                    f"✅ Promotion scan times set to: {scan_times}"
+                )
             else:
                 await update.message.reply_text("❌ Failed to update scheduler")
         else:
             await update.message.reply_text("❌ Failed to save schedule configuration")
     except ValueError:
-        await update.message.reply_text("Invalid hours format. Use comma-separated numbers (e.g., 8,20)")
+        await update.message.reply_text(
+            "Invalid hours format. Use comma-separated numbers (e.g., 8,20)"
+        )
 
 
 async def handle_setupdatetime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the source update time"""
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
-        await update.message.reply_text("Usage: /setupdatetime <hour>\nExample: /setupdatetime 7 (for 7AM)")
+        await update.message.reply_text(
+            "Usage: /setupdatetime <hour>\nExample: /setupdatetime 7 (for 7AM)"
+        )
         return
-    
+
     try:
         hour = int(parts[1].strip())
-        
+
         if not 0 <= hour <= 23:
             await update.message.reply_text("Hour must be between 0 and 23")
             return
-        
+
         schedule_config = ScheduleConfig()
         if schedule_config.set_update_time(hour):
             if update_schedule():
-                await update.message.reply_text(f"✅ Source update time set to: {hour}:00")
+                await update.message.reply_text(
+                    f"✅ Source update time set to: {hour}:00"
+                )
             else:
                 await update.message.reply_text("❌ Failed to update scheduler")
         else:
             await update.message.reply_text("❌ Failed to save schedule configuration")
     except ValueError:
-        await update.message.reply_text("Invalid hour format. Use a number between 0 and 23")
+        await update.message.reply_text(
+            "Invalid hour format. Use a number between 0 and 23"
+        )
 
 
 async def handle_image_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle image messages for multimodal chat"""
     if not openai_client:
-        await update.message.reply_text("❌ Chat feature is not available. OpenAI API key not configured.")
+        await update.message.reply_text(
+            "❌ Chat feature is not available. OpenAI API key not configured."
+        )
         return
 
     if not update.message.photo:
@@ -475,54 +514,47 @@ async def handle_image_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> N
 
     user_id = update.effective_user.id
     user_msgs = memory.get(user_id)
-    
+
     # Add system prompt for bot configuration if first message
     if not user_msgs:
         system_prompt = {
-            "role": "system", 
-            "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can analyze images and help users with visual content. You can help users configure bot settings, understand commands, and provide general assistance."
+            "role": "system",
+            "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can analyze images and help users with visual content. You can help users configure bot settings, understand commands, and provide general assistance.",
         }
         user_msgs.append(system_prompt)
 
     # Get the largest photo
     photo = update.message.photo[-1]
-    
+
     try:
         # Download the image
         file = await photo.get_file()
         file_url = file.file_path
-        
+
         # Prepare message content with image
-        content = [
-            {
-                "type": "image_url",
-                "image_url": {"url": file_url}
-            }
-        ]
-        
+        content = [{"type": "image_url", "image_url": {"url": file_url}}]
+
         # Add text caption if provided
         if update.message.caption:
-            content.insert(0, {
-                "type": "text", 
-                "text": update.message.caption
-            })
+            content.insert(0, {"type": "text", "text": update.message.caption})
         else:
-            content.insert(0, {
-                "type": "text", 
-                "text": "What do you see in this image?"
-            })
-        
+            content.insert(
+                0, {"type": "text", "text": "What do you see in this image?"}
+            )
+
         user_msgs.append({"role": "user", "content": content})
 
         # Get user preferences
-        model = memory.get_user_preference(user_id, "model") or "gpt-4o"  # Use gpt-4o for vision
+        model = (
+            memory.get_user_preference(user_id, "model") or "gpt-4o"
+        )  # Use gpt-4o for vision
         temperature = float(memory.get_user_preference(user_id, "temperature") or "0.7")
         max_tokens = int(memory.get_user_preference(user_id, "max_tokens") or "1000")
-        
+
         # Ensure we use a vision-capable model
         if model not in ["gpt-4o", "gpt-4-turbo"]:
             model = "gpt-4o"
-        
+
         resp = await asyncio.to_thread(
             openai_client.chat.completions.create,
             model=model,
@@ -531,16 +563,16 @@ async def handle_image_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> N
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        
+
         if not resp.choices or not resp.choices[0].message:
             await update.message.reply_text("❌ Invalid response from OpenAI API.")
             return
-            
+
         reply = resp.choices[0].message.content
         if not reply:
             await update.message.reply_text("❌ Empty response from OpenAI API.")
             return
-            
+
     except Exception as e:
         await update.message.reply_text(f"❌ OpenAI API error: {str(e)}")
         return
@@ -610,22 +642,22 @@ def main() -> None:
         app.add_handler(CommandHandler("update", update))
         app.add_handler(CommandHandler("chat", handle_chat))
         app.add_handler(CommandHandler("end", handle_end))
-        
+
         # Configuration commands
         app.add_handler(CommandHandler("config", handle_config))
         app.add_handler(CommandHandler("setmodel", handle_setmodel))
         app.add_handler(CommandHandler("settemp", handle_settemp))
         app.add_handler(CommandHandler("setmaxtokens", handle_setmaxtokens))
-        
+
         # Enhanced source management
         app.add_handler(CommandHandler("import", handle_import))
         app.add_handler(CommandHandler("export", handle_export))
-        
+
         # Schedule management
         app.add_handler(CommandHandler("schedule", handle_schedule))
         app.add_handler(CommandHandler("setscantime", handle_setscantime))
         app.add_handler(CommandHandler("setupdatetime", handle_setupdatetime))
-        
+
         # Image handler for multimodal chat
         app.add_handler(MessageHandler(filters.PHOTO, handle_image_chat))
 
