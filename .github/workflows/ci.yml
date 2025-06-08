@@ -9,8 +9,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: '3.12'
       - run: pip install -e .[dev]
@@ -38,8 +38,8 @@ jobs:
   trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@0.30.0
+      - uses: actions/checkout@v4.2.2
+      - uses: aquasecurity/trivy-action@0.31.0
         with:
           scan-type: fs
           ignore-unfixed: true
