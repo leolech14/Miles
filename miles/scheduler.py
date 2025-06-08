@@ -13,6 +13,7 @@ from miles.source_search import update_sources
 from miles.ai_source_discovery import ai_update_sources
 from miles.bonus_alert_bot import run_scan
 from miles.plugins.plugin import register_with_scheduler
+
 """
 AsyncIO-based cron scheduler.  Import `setup_scheduler()` during application
 startup (e.g. `__main__.py`, FastAPI lifespan event, or a standalone script).
