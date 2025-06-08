@@ -1,15 +1,25 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional, Dict, Any
+import logging
+from typing import Dict, Optional
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from zoneinfo import ZoneInfo
 
-from miles.bonus_alert_bot import run_scan
+from miles.logging_config import setup_logging
+from miles.schedule_config import ScheduleConfig
 from miles.source_search import update_sources
 from miles.ai_source_discovery import ai_update_sources
-from miles.schedule_config import ScheduleConfig
+from miles.bonus_alert_bot import run_scan
 
+"""
+AsyncIO-based cron scheduler.  Import `setup_scheduler()` during application
+startup (e.g. `__main__.py`, FastAPI lifespan event, or a standalone script).
+"""
+
+setup_logging()
+logger = logging.getLogger("miles.scheduler")
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 _scheduler: Optional[AsyncIOScheduler] = None
@@ -20,34 +30,32 @@ def setup_scheduler() -> None:
     loop = asyncio.get_running_loop()
     _scheduler = AsyncIOScheduler(event_loop=loop, timezone=TIMEZONE)
 
-    # Load configuration
-    config = ScheduleConfig().get_config()
+    cfg = ScheduleConfig().get_config()
 
     # Add jobs based on configuration - use AI discovery
     _scheduler.add_job(
         ai_update_sources,
         "cron",
-        hour=config["update_hour"],
+        hour=cfg["update_hour"],
         minute=0,
         id="ai_update_sources",
     )
 
-    scan_hours = config["scan_hours"]
-    if isinstance(scan_hours, list):
-        for hour in scan_hours:
-            _scheduler.add_job(run_scan, "cron", hour=hour, minute=0, id=f"scan_{hour}")
+    # Main scan jobs – possibly multiple hours per day
+    for hour in cfg["scan_hours"]:
+        _scheduler.add_job(run_scan, "cron", hour=hour, minute=0, id=f"scan_{hour}")
 
     _scheduler.start()
+    logger.info("Scheduler started with %s job(s)", len(_scheduler.get_jobs()))
 
 
 def update_schedule() -> bool:
-    """Update the scheduler with new configuration"""
+    """Hot-reload APScheduler with new configuration values."""
     global _scheduler
-    if not _scheduler:
+    if _scheduler is None:
         return False
 
-    config = ScheduleConfig().get_config()
-
+    cfg = ScheduleConfig().get_config()
     try:
         # Remove existing jobs
         for job in _scheduler.get_jobs():
@@ -57,12 +65,12 @@ def update_schedule() -> bool:
         _scheduler.add_job(
             update_sources,
             "cron",
-            hour=config["update_hour"],
+            hour=cfg["update_hour"],
             minute=0,
             id="update_sources",
         )
 
-        scan_hours = config["scan_hours"]
+        scan_hours = cfg["scan_hours"]
         if isinstance(scan_hours, list):
             for hour in scan_hours:
                 _scheduler.add_job(
@@ -74,7 +82,7 @@ def update_schedule() -> bool:
         return False
 
 
-def get_current_schedule() -> Dict[str, Any]:
+def get_current_schedule() -> Dict[str, object]:
     """Get current schedule configuration"""
     return ScheduleConfig().get_config()
 

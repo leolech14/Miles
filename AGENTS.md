@@ -15,7 +15,7 @@ PRIMARY GOAL: deliver timely Telegram alerts for mileage-transfer bonuses via an
 - Use `black` formatting and `ruff` linting (enforced by pre-commit)
 - Import order: standard library, third-party, local modules (`from miles.module import`)
 - Strict typing with mypy (`--strict` mode)
-- Logger setup: `from miles.logging_config import setup_logging; setup_logging(); logger = logging.getLogger("miles.module_name")`
+- Logger setup: `import logging; logger = logging.getLogger("miles.module_name")` (setup_logging() called automatically via miles.__init__)
 - Exception handling: Use `logger.exception()` for fatal errors
 - Test setup: Use `fakeredis.FakeRedis.from_url` for Redis mocking via monkeypatch
 - File paths: Use `tmp_path` fixture for temporary files in tests

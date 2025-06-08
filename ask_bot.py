@@ -62,6 +62,15 @@ def check_environment_variables():
         )
     print("[ask_bot] All required environment variables are set")
 
+    # STRICT VALIDATION: Check OPENAI_API_KEY is not a zombie value
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key and openai_key in {"not_set", "dummy", "placeholder"}:
+        print(f"[ask_bot] 🚫 OPENAI_API_KEY has invalid zombie value: '{openai_key}'")
+        print("[ask_bot] To fix:")
+        print("[ask_bot]   fly secrets set OPENAI_API_KEY=sk-proj-...")
+        print("[ask_bot]   gh secret set OPENAI_API_KEY -b'sk-proj-...'")
+        raise SystemExit("OPENAI_API_KEY contains invalid placeholder value")
+
     # Check optional variables and warn if missing
     print(
         f"[ask_bot] Checking optional environment variables: {', '.join(OPTIONAL_ENV_VARS)}"

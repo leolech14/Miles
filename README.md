@@ -15,7 +15,13 @@ Environment variables:
 
 ## Quick start
 
-1. Configure the secrets `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `MIN_BONUS`,
+1. **Set up secrets** using the unified script (recommended):
+
+   ```bash
+   ./scripts/set_secrets.sh set-all
+   ```
+
+   Or manually configure the secrets `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `MIN_BONUS`,
    `FLY_API_TOKEN`, `OPENAI_API_KEY` and optionally `SOURCES_PATH` in your GitHub repository.
 
 2. Create the Fly.io app (run once):
@@ -23,10 +29,18 @@ Environment variables:
    ```bash
    flyctl apps create miles
    ```
+
 3. Deploy to Fly.io with a single command:
 
    ```bash
    gh workflow run deploy-fly
+   ```
+
+4. **Verify secrets are working**:
+
+   ```bash
+   ./scripts/set_secrets.sh check
+   fly logs --app miles
    ```
 
 To run everything locally:
@@ -37,11 +51,25 @@ docker compose up
 
 **Note**: For `/chat` command to work, you need to set the `OPENAI_API_KEY` environment variable or Fly.io secret.
 
-After cloning the repository, install the development extras and run the checks:
+## Development Setup
+
+After cloning the repository:
 
 ```bash
+# Install with development dependencies
 pip install -e .[dev]
+
+# Set up pre-commit hooks
+pre-commit install
+
+# Run quality checks
 pre-commit run --all-files
+
+# Run tests with coverage
+pytest --cov=miles --cov-report=html
+
+# Test manual scan
+python -c "from miles import run_scan; run_scan()"
 ```
 
 Edit `sources.yaml` to change which pages are scanned.
@@ -197,6 +225,29 @@ If you get "❌ Chat feature is not available. OpenAI API key not configured":
    fly logs
    ```
    Look for: `[ask_bot] OpenAI client initialized`
+
+### Secret Management
+
+**Quick setup with unified script**:
+```bash
+# Set all secrets at once
+./scripts/set_secrets.sh set-all
+
+# Set only OpenAI key
+./scripts/set_secrets.sh set-openai
+
+# Check secret status
+./scripts/set_secrets.sh check
+```
+
+**Common issues**:
+- **"zombie value" errors**: Secret contains "not_set" - use script above to fix
+- **Deploy failures**: Missing OPENAI_API_KEY - CI will fail fast with clear error
+- **Silent AI failures**: Runtime validation catches invalid keys at startup
+
+**Security notes**:
+- Dependencies are not pinned - consider using `pip freeze > requirements.lock` for production
+- Bot token is in environment variables - ensure proper secret management in production
 
 ## Development
 

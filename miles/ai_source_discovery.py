@@ -72,11 +72,11 @@ Return only the search queries, one per line.""",
             if content:
                 queries = content.strip().split("\n")
                 # Clean up and filter queries
-                queries = [
+                clean_queries = [
                     q.strip().strip('"').strip("'") for q in queries if q.strip()
                 ]
-                logger.info(f"Generated {len(queries)} AI search queries")
-                return queries[:5]  # Limit to 5 queries
+                logger.info(f"Generated {len(clean_queries)} AI search queries")
+                return clean_queries[:5]  # Limit to 5 queries
             return ["transferencia de pontos bonus milhas brasil"]
 
         except Exception as e:

@@ -13,6 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: "🚨 Ensure OPENAI_API_KEY exists"
+        run: |
+          if [[ -z "${{ secrets.OPENAI_API_KEY }}" ]]; then
+            echo "🚨 OPENAI_API_KEY is missing from GitHub secrets. Aborting deployment."
+            echo "Fix: gh secret set OPENAI_API_KEY -b'sk-proj-...'"
+            exit 1
+          fi
+          echo "✅ OPENAI_API_KEY secret is present"
       - name: "Install Fly CLI"
         run: |
           curl -L https://fly.io/install.sh | sh
@@ -26,7 +34,7 @@ jobs:
       - name: "Push secrets to Fly"
         run: |
           fly secrets set \
-            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY || 'not_set' }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
             TELEGRAM_CHAT_ID="${{ secrets.TELEGRAM_CHAT_ID }}" \
             MIN_BONUS="${{ secrets.MIN_BONUS || '80' }}" \
