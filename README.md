@@ -5,11 +5,13 @@ Telegram notifications when new deals appear.
 
 Environment variables:
 
-- `TELEGRAM_BOT_TOKEN` – bot token used to send messages
-- `TELEGRAM_CHAT_ID` – default chat to notify
+- `TELEGRAM_BOT_TOKEN` – bot token used to send messages (required)
+- `TELEGRAM_CHAT_ID` – default chat to notify (required)
 - `MIN_BONUS` – minimum bonus percentage to alert (default 80)
 - `SOURCES_PATH` – path to the YAML file with program sources
-- `OPENAI_API_KEY` – required for the `/chat` command
+- `OPENAI_API_KEY` – required for the `/chat` command and AI features
+- `REDIS_URL` – Redis connection for chat history and preferences (falls back to file storage)
+- `LOG_WEBHOOK_URL` – webhook URL for CI log streaming (optional)
 
 ## Quick start
 
@@ -52,12 +54,26 @@ Edit `sources.yaml` to change which pages are scanned.
 | `/rmsrc <id_or_url>` | Remove a source by index or full URL |
 | `/update` | Search the web for new sources |
 | `/chat <text>` | Talk with the integrated AI assistant |
+| `/config` | Show current configuration and available commands |
+| `/setmodel <model>` | Change AI model (gpt-4o-mini, gpt-4o, etc.) |
+| `/settemp <0.0-2.0>` | Set AI response temperature |
+| `/setmaxtokens <100-4000>` | Set maximum response length |
+| `/import <urls>` | Import sources from URLs in text |
+| `/export` | Export all sources as text |
+| `/schedule` | View current scan/update schedule |
+| `/setscantime <hours>` | Set promotion scan times (e.g., 8,20) |
+| `/setupdatetime <hour>` | Set source update time (e.g., 7) |
+| `/end` | Clear chat context |
 
 ## ChatGPT mode
 
 Use `/chat <message>` to converse with the bot. The conversation is kept per
 Telegram user in Redis for up to 30 minutes. Send `/end` to clear the stored
 context. Set `OPENAI_API_KEY` to enable this feature.
+
+**Multimodal Support**: Send images to the bot for AI analysis! The bot can analyze screenshots, documents, or any visual content you send via Telegram. Add a caption to provide context for the image analysis.
+
+**Personalization**: Configure your AI experience with `/setmodel`, `/settemp`, and `/setmaxtokens` commands. Each user's preferences are stored individually.
 
 ## Example sources
 
@@ -97,6 +113,51 @@ flowchart TD
     Core-->|Store context|Redis
     CI-->|Build/Test/Deploy|Docker
 ```
+
+## Log Streaming
+
+The CI pipeline can forward step logs to a webhook for real-time monitoring and offline analysis.
+
+### Start the log receiver locally
+
+```bash
+python log_receiver.py
+```
+
+In another terminal, expose it publicly with ngrok:
+
+```bash
+ngrok http 5051
+```
+
+Copy the HTTPS URL (e.g., `https://abc123.ngrok.io`) and set it as the `LOG_WEBHOOK_URL` secret in your GitHub repository settings.
+
+### Webhook payload format
+
+The receiver expects JSON payloads with:
+```json
+{
+  "run_id": "github-run-id-or-local-test",
+  "step": "pytest|mypy|ping",
+  "log": "full step output as string"
+}
+```
+
+### Log storage
+
+All received logs are stored in `received_logs/<run_id>.ndjson` for offline analysis. Each line contains a complete JSON payload.
+
+### Test connectivity
+
+```bash
+./scripts/ping_webhook.sh http://localhost:5051
+# or with your ngrok URL:
+./scripts/ping_webhook.sh https://abc123.ngrok.io
+```
+
+### Rotate webhook URL
+
+When your ngrok URL changes, update the `LOG_WEBHOOK_URL` secret in GitHub repository settings → Secrets and variables → Actions.
 
 ## Development
 

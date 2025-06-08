@@ -15,8 +15,26 @@ jobs:
           python-version: '3.12'
       - run: pip install -e .[dev]
       - run: pre-commit run --all-files
-      - run: pytest --cov=miles --cov-report=xml
-      - run: mypy miles
+      - name: Run tests
+        run: pytest --cov=miles --cov-report=xml 2>&1 | tee test_output.log
+      - name: Ship test logs
+        if: env.LOG_WEBHOOK_URL != ''
+        run: |
+          curl -s -X POST "$LOG_WEBHOOK_URL" \
+               -H "Content-Type: application/json" \
+               -d "{\"run_id\":\"${{ github.run_id }}\",\"step\":\"pytest\",\"log\":\"$(cat test_output.log | jq -Rs .)\"}" || true
+        env:
+          LOG_WEBHOOK_URL: ${{ secrets.LOG_WEBHOOK_URL }}
+      - name: Run mypy
+        run: mypy miles 2>&1 | tee mypy_output.log
+      - name: Ship mypy logs
+        if: env.LOG_WEBHOOK_URL != ''
+        run: |
+          curl -s -X POST "$LOG_WEBHOOK_URL" \
+               -H "Content-Type: application/json" \
+               -d "{\"run_id\":\"${{ github.run_id }}\",\"step\":\"mypy\",\"log\":\"$(cat mypy_output.log | jq -Rs .)\"}" || true
+        env:
+          LOG_WEBHOOK_URL: ${{ secrets.LOG_WEBHOOK_URL }}
   trivy:
     runs-on: ubuntu-latest
     steps:
