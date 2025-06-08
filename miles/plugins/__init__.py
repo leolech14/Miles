@@ -1,6 +1,6 @@
 """
-Namespace package for first-party example plug-ins.
+Initialiser for the **miles.plugins** namespace.
 
-Third-party plug-ins live outside the repo and register through
-'milesbot_plugins' entry-points, so this file can stay empty.
+Required so that ``miles.plugins.plugin`` can be resolved by Python
+and by static analysers such as Pyright/Pylance.
 """

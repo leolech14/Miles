@@ -1,0 +1,8 @@
+{
+  // other existing settings …
+  "python.analysis.typeCheckingMode": "basic",
+
+  // Allow the language server to find packages inside the *src* directory
+  // (adjust the relative path if your layout is different).
+  "python.analysis.extraPaths": ["./src"]
+}

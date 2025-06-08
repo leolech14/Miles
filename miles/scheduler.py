@@ -12,8 +12,7 @@ from miles.schedule_config import ScheduleConfig
 from miles.source_search import update_sources
 from miles.ai_source_discovery import ai_update_sources
 from miles.bonus_alert_bot import run_scan
-from miles.plugin_loader import register_with_scheduler
-
+from miles.plugins.plugin import register_with_scheduler
 """
 AsyncIO-based cron scheduler.  Import `setup_scheduler()` during application
 startup (e.g. `__main__.py`, FastAPI lifespan event, or a standalone script).
@@ -33,7 +32,7 @@ def setup_scheduler() -> None:
 
     cfg = ScheduleConfig().get_config()
 
-    # Add jobs based on configuration - use AI discovery
+    # # jobs based on configuration - use AI discovery
     _scheduler.add_job(
         ai_update_sources,
         "cron",
@@ -94,7 +93,7 @@ def get_current_schedule() -> Dict[str, object]:
 if __name__ == "__main__":
 
     async def _main() -> None:
-        # `to_thread` returns a coroutine – we must await it to keep mypy happy
-        await asyncio.to_thread(lambda: asyncio.run(run_scan()))
+        # `to_thread` returns a coroutine; awaiting removes the mypy warning.
+        await asyncio.to_thread(run_scan)
 
     asyncio.run(_main())

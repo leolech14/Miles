@@ -62,9 +62,9 @@ class PromoStore:
         return hashlib.md5(key_str.encode()).hexdigest()
 
     def _is_seen(self, promo_hash: str) -> bool:
-        """Check if promo has been seen before."""
+        """True if promo_id is already persisted."""
         if self._use_redis:
-            return self._redis.sismember("miles:seen_promos", promo_hash)  # type: ignore
+            return bool(self._redis.sismember("miles:seen_promos", promo_hash))  # type: ignore
         else:
             return promo_hash in self._memory_store
 

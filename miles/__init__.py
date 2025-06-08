@@ -1,19 +1,17 @@
-"""Miles - Telegram Bonus Alert Bot for Brazilian Mileage Programs"""
+"""
+Top-level package initialiser for **miles**.
 
-from miles.logging_config import setup_logging
-from miles.bonus_alert_bot import run_scan, main
-from miles.source_store import SourceStore
-from miles.ai_source_discovery import ai_update_sources
+Having this file turns the ``miles`` directory into a proper Python package,
+which allows absolute imports such as
 
-__version__ = "0.1.0"
+    import miles.plugins.plugin
+"""
 
-# Set up logging once at package level
-setup_logging()
+# Re-export the *plugins* sub-package so callers can do
+#     import miles.plugins
+# without an extra import.
+from importlib import import_module
 
-__all__ = [
-    "__version__",
-    "run_scan",
-    "main",
-    "SourceStore",
-    "ai_update_sources",
-]
+plugins = import_module("miles.plugins")
+
+__all__ = ["plugins"]
