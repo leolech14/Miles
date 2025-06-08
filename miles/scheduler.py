@@ -92,4 +92,8 @@ def get_current_schedule() -> Dict[str, object]:
 
 
 if __name__ == "__main__":
-    asyncio.run(asyncio.to_thread(run_scan))
+    async def _main() -> None:
+        # `to_thread` returns a coroutine – we must await it to keep mypy happy
+        await asyncio.to_thread(run_scan)
+
+    asyncio.run(_main())

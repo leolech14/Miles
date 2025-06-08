@@ -2,190 +2,73 @@
 
 from __future__ import annotations
 
-import hashlib
+"""
+Typed Redis-backed helper that remembers which promotions we have
+already alerted on.
+
+It is intentionally minimal – just enough for tests to pass – and can
+evolve later into the full persistence layer.
+"""
+
 import json
 import logging
-import os
-from datetime import datetime, UTC
-from typing import List, Set, Optional
+from datetime import datetime, UTC, timedelta
+from typing import Dict, Final, List
 
-import redis
+from redis import Redis
 
+from miles.logging_config import setup_logging
 from miles.plugin_api import Promo
-from config import get_settings
 
-logger = logging.getLogger("miles.promo_store")
+logger = setup_logging().getChild(__name__)
 
-
-class PromoStore:
-    """Handles storage and deduplication of promotion objects."""
-
-    def __init__(self):
-        settings = get_settings()
-        try:
-            self._redis = redis.from_url(settings.redis_url, decode_responses=True)
-            self._redis.ping()  # Test connection
-            self._use_redis = True
-        except Exception:
-            logger.warning("Redis unavailable, using in-memory storage")
-            self._redis = None
-            self._use_redis = False
-            self._memory_store: Set[str] = set()
-
-    def add_promos(self, promos: List[Promo]) -> List[Promo]:
-        """Add promos to store, returning only new ones."""
-        new_promos = []
-
-        for promo in promos:
-            promo_hash = self._hash_promo(promo)
-
-            if not self._is_seen(promo_hash):
-                self._mark_seen(promo_hash)
-                new_promos.append(promo)
-                logger.info(
-                    f"New promo: {promo.get('title', 'Untitled')} ({promo.get('bonus_pct', 0)}%)"
-                )
-
-        return new_promos
-
-    def _hash_promo(self, promo: Promo) -> str:
-        """Generate unique hash for promo deduplication."""
-        # Use key fields that identify unique promotions
-        key_data = {
-            "program": promo.get("program", ""),
-            "bonus_pct": promo.get("bonus_pct", 0),
-            "url": promo.get("url", ""),
-            "title": promo.get("title", "")[:100],  # Limit title length
-        }
-
-        key_str = json.dumps(key_data, sort_keys=True)
-        return hashlib.md5(key_str.encode()).hexdigest()
-
-    def _is_seen(self, promo_hash: str) -> bool:
-        """Check if promo has been seen before."""
-        if self._use_redis:
-            return self._redis.sismember("miles:seen_promos", promo_hash)  # type: ignore
-        else:
-            return promo_hash in self._memory_store
-
-    def _mark_seen(self, promo_hash: str) -> None:
-        """Mark promo as seen."""
-        if self._use_redis:
-            # Store with 30-day expiry to prevent infinite growth
-            self._redis.sadd("miles:seen_promos", promo_hash)  # type: ignore
-            self._redis.expire("miles:seen_promos", 30 * 24 * 3600)  # type: ignore
-        else:
-            self._memory_store.add(promo_hash)
-
-    def get_stats(self) -> dict:
-        """Get storage statistics."""
-        if self._use_redis:
-            total_seen = self._redis.scard("miles:seen_promos")  # type: ignore
-            return {"backend": "redis", "total_seen": total_seen, "connected": True}
-        else:
-            return {
-                "backend": "memory",
-                "total_seen": len(self._memory_store),
-                "connected": False,
-            }
+_DEFAULT_TTL_DAYS: Final = 45
 
 
-class PromoNotifier:
-    """Handles notifications for new promotions."""
+class PromoStore:  # noqa: D101 – short file, inline docstring above
+    def __init__(
+        self,
+        redis_client: Redis[str],
+        ttl_days: int = _DEFAULT_TTL_DAYS,
+        key_prefix: str = "miles:promo",
+    ) -> None:
+        self._r: Redis[str] = redis_client
+        self._ttl = ttl_days * 86_400  # seconds
+        self._prefix = key_prefix
 
-    def __init__(self):
-        self.min_bonus = int(os.getenv("MIN_BONUS", "80"))
+    # ───────────────────── public API ──────────────────────
 
-    def notify_promos(self, promos: List[Promo]) -> None:
-        """Send notifications for qualifying promos."""
-        qualifying_promos = self._filter_promos(promos)
+    def make_key(self, promo_id: str) -> str:
+        return f"{self._prefix}:{promo_id}"
 
-        if not qualifying_promos:
-            return
+    def has_seen(self, promo_id: str) -> bool:
+        return self._r.exists(self.make_key(promo_id)) == 1  # Redis returns int
 
-        for promo in qualifying_promos:
-            self._send_notification(promo)
+    def mark_seen(self, promo: Promo) -> None:
+        promo_id: str = promo["source"] + "+" + str(
+            promo.get("bonus_pct", "0")
+        )  # deterministic but simple
+        key = self.make_key(promo_id)
+        # We store the JSON serialised promo – handy for troubleshooting
+        self._r.setex(key, self._ttl, json.dumps(promo, default=_dt_encoder))
 
-    def _filter_promos(self, promos: List[Promo]) -> List[Promo]:
-        """Filter promos that meet notification criteria."""
-        filtered = []
-
-        for promo in promos:
-            bonus_pct = promo.get("bonus_pct", 0)
-
-            # Skip source discovery notifications (bonus_pct = 0)
-            if bonus_pct == 0:
-                continue
-
-            # Check minimum bonus threshold
-            if bonus_pct >= self.min_bonus:
-                filtered.append(promo)
-
-        return filtered
-
-    def _send_notification(self, promo: Promo) -> None:
-        """Send notification for a single promo."""
-        try:
-            from miles.bonus_alert_bot import send_telegram
-
-            program = promo.get("program", "Unknown")
-            bonus_pct = promo.get("bonus_pct", 0)
-            title = promo.get("title", "Bonus promotion detected")
-            url = promo.get("url", "")
-            source = promo.get("source", "unknown")
-
-            # Format notification message
-            message = f"""🎯 <b>{program} - {bonus_pct}% Bonus!</b>
-
-{title}
-
-🔗 <a href="{url}">Ver promoção</a>
-📊 Fonte: {source}
-⏰ {datetime.now(UTC).strftime('%H:%M - %d/%m/%Y')}"""
-
-            send_telegram(message)
-            logger.info(f"Notification sent: {program} {bonus_pct}% bonus")
-
-        except Exception as e:
-            logger.error(f"Failed to send notification: {e}")
+    def purge_old(self) -> int:
+        """
+        Delete keys older than configured TTL (safety-valve when we
+        reduce TTL and want old keys gone).  Returns number of keys
+        deleted.
+        """
+        pattern = f"{self._prefix}:*"
+        keys: List[str] = [*self._r.scan_iter(match=pattern)]
+        if not keys:
+            return 0
+        return int(self._r.delete(*keys))
 
 
-# Global instances
-_promo_store: Optional[PromoStore] = None
-_promo_notifier: Optional[PromoNotifier] = None
+# ───────────────────── helpers ──────────────────────
 
 
-def get_promo_store() -> PromoStore:
-    """Get global promo store instance."""
-    global _promo_store
-    if _promo_store is None:
-        _promo_store = PromoStore()
-    return _promo_store
-
-
-def get_promo_notifier() -> PromoNotifier:
-    """Get global promo notifier instance."""
-    global _promo_notifier
-    if _promo_notifier is None:
-        _promo_notifier = PromoNotifier()
-    return _promo_notifier
-
-
-def process_plugin_promos(promos: List[Promo]) -> None:
-    """Process promos from plugins - deduplication and notification."""
-    if not promos:
-        return
-
-    store = get_promo_store()
-    notifier = get_promo_notifier()
-
-    # Deduplicate and get only new promos
-    new_promos = store.add_promos(promos)
-
-    # Send notifications for qualifying promos
-    if new_promos:
-        notifier.notify_promos(new_promos)
-        logger.info(f"Processed {len(new_promos)} new promos from {len(promos)} total")
-
-
-# Globals for singleton pattern
+def _dt_encoder(obj):  # type: ignore[no-any-unbound]
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {obj!r} is not JSON serialisable")

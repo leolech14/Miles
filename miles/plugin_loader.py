@@ -4,7 +4,7 @@ import logging
 import os
 from datetime import datetime, UTC
 from importlib.metadata import entry_points
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Type
 
 from apscheduler.schedulers.base import BaseScheduler
 
@@ -32,7 +32,10 @@ def discover_plugins() -> Dict[str, Plugin]:
         if enabled is not None and ep.name not in enabled:
             continue
         try:
-            plugin_cls: Any = ep.load()
+            plugin_cls: Type[Plugin] | None = ep.load()
+            if plugin_cls is None:
+                logger.error("Plugin class not defined for %s", ep.name)
+                continue
             plugin: Plugin = plugin_cls()  # type: ignore[call-arg]
             found[plugin.name] = plugin
             logger.info("Loaded plug-in: %s", plugin.name)
@@ -40,7 +43,6 @@ def discover_plugins() -> Dict[str, Plugin]:
             logger.exception("Failed to load plug-in %s", ep.name)
 
     return found
-
 
 def register_with_scheduler(scheduler: BaseScheduler) -> None:
     """
