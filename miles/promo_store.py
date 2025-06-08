@@ -7,10 +7,9 @@ import json
 import logging
 import os
 from datetime import datetime, UTC
-from typing import List, Set, Optional, Union
+from typing import List, Set, Optional
 
 import redis
-from redis import Redis
 
 from miles.plugin_api import Promo
 from config import get_settings
@@ -25,7 +24,7 @@ class PromoStore:
         settings = get_settings()
         self._redis: Optional[redis.Redis] = None  # type: ignore[type-arg]
         try:
-            self._redis = redis.from_url(settings.redis_url, decode_responses=True)  # type: ignore[no-untyped-call,assignment]
+            self._redis = redis.from_url(settings.redis_url, decode_responses=True)
             self._redis.ping()  # Test connection
             self._use_redis = True
         except Exception:
