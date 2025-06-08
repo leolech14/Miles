@@ -1,6 +1,7 @@
-import asyncpg
-from miles.config import get_settings
+from typing import Any
 
-async def get_conn():
-    st = get_settings()
-    return await asyncpg.connect(st.database_url)  # add `database_url` to Settings
+
+async def get_conn() -> Any:
+    """Database connection - placeholder implementation"""
+    # TODO: Implement proper database configuration
+    raise NotImplementedError("Database integration not yet implemented")

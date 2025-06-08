@@ -677,7 +677,7 @@ async def handle_ai_brain(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
 
 AVAILABLE ACTIONS:
 - analyze_sources: Review current source quality and performance
-- discover_sources: Find new high-quality mileage sources  
+- discover_sources: Find new high-quality mileage sources
 - scan_promotions: Run promotion scan and analyze results
 - optimize_settings: Suggest optimal bot configuration
 - manage_schedule: Recommend scan timing improvements
@@ -685,7 +685,7 @@ AVAILABLE ACTIONS:
 You have access to:
 - Source list management (add/remove sources)
 - Promotion scanning with bonus detection
-- User preference management  
+- User preference management
 - Schedule configuration
 - Brazilian mileage program expertise
 

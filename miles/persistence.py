@@ -1,5 +1,19 @@
-from miles.models import Promotion
+from typing import Any
 from miles.db import get_conn
+
+
+class Promotion:
+    """Placeholder for Promotion model"""
+
+    canonical_id: str
+    source_program: str
+    target_program: str
+    bonus_percent: int
+    start_date: Any
+    end_date: Any
+    url: str
+    raw_title: str
+
 
 async def save_promo(p: Promotion, duplicate: bool) -> None:
     """
@@ -13,7 +27,7 @@ async def save_promo(p: Promotion, duplicate: bool) -> None:
     ON CONFLICT (canonical_id) DO UPDATE
        SET discovered_at = NOW()
     """
-    async with (await get_conn()) as conn:
+    async with await get_conn() as conn:
         await conn.execute(
             sql,
             p.canonical_id,
