@@ -290,13 +290,32 @@ async def handle_config(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 • Max Tokens: `{current_max_tokens}`
 
 **Available Commands:**
+• `/ask` - Run manual promotion scan
+• `/sources` - List current sources  
+• `/addsrc <url>` - Add new source URL
+• `/rmsrc <id_or_url>` - Remove source by index or URL
+• `/update` - AI-powered search for new sources
+• `/chat <text>` - Talk with integrated AI assistant
+• `/end` - Clear chat context
+• `/config` - Show current configuration
+
+**AI Configuration:**
 • `/setmodel <model>` - Change AI model
-• `/settemp <0.0-2.0>` - Set temperature
-• `/setmaxtokens <number>` - Set max tokens
-• `/schedule` - View/modify scan times
-• `/import <url>` - Import sources from URL
-• `/export` - Export sources list
-• `/config` - Show this config
+• `/settemp <0.0-2.0>` - Set temperature (0.0-2.0)
+• `/setmaxtokens <100-4096>` - Set max response tokens
+
+**Source Management:**  
+• `/import <urls>` - Import sources from URLs in text
+• `/export` - Export all sources as text
+
+**Scheduling:**
+• `/schedule` - View current scan/update schedule
+• `/setscantime <hours>` - Set promotion scan times (e.g., 8,20)
+• `/setupdatetime <hour>` - Set source update time (e.g., 7)
+
+**Advanced:**
+• `/brain <command>` - Let AI control and optimize the bot
+• `/debug` - Show bot status and diagnostics
 
 **Available Models:**
 • gpt-4o-mini (fastest, cheapest)
@@ -361,8 +380,8 @@ async def handle_setmaxtokens(update: Update, ctx: ContextTypes.DEFAULT_TYPE) ->
 
     try:
         max_tokens = int(parts[1].strip())
-        if not 100 <= max_tokens <= 4000:
-            await update.message.reply_text("Max tokens must be between 100 and 4000")
+        if not 100 <= max_tokens <= 4096:
+            await update.message.reply_text("Max tokens must be between 100 and 4096")
             return
 
         user_id = update.effective_user.id
@@ -370,7 +389,7 @@ async def handle_setmaxtokens(update: Update, ctx: ContextTypes.DEFAULT_TYPE) ->
         await update.message.reply_text(f"✅ Max tokens set to: {max_tokens}")
     except ValueError:
         await update.message.reply_text(
-            "Invalid number. Use an integer between 100 and 4000"
+            "Invalid number. Use an integer between 100 and 4096"
         )
 
 
