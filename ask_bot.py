@@ -112,7 +112,9 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("✅ Scan complete. No new promotions found.")
         return
     else:
-        await update.message.reply_text(f"✅ Scan complete. Found {len(alerts)} promotions!")
+        await update.message.reply_text(
+            f"✅ Scan complete. Found {len(alerts)} promotions!"
+        )
 
 
 async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -173,15 +175,17 @@ async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
     await update.message.reply_text("🧠 AI is searching for new mileage sources...")
-    
+
     # Try AI-powered discovery first
     try:
         added = await asyncio.to_thread(ai_update_sources)
         if added:
-            msg = f"🧠 AI discovered {len(added)} high-quality sources:\n" + "\n".join(added)
+            msg = f"🧠 AI discovered {len(added)} high-quality sources:\n" + "\n".join(
+                added
+            )
         else:
             msg = "🧠 AI analysis complete. No new high-quality sources found."
-    except Exception as e:
+    except Exception:
         # Fallback to basic search
         await update.message.reply_text("⚠️ AI search failed, using basic method...")
         added = await asyncio.to_thread(update_sources)
@@ -189,7 +193,7 @@ async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             msg = "📋 Basic search found new sources:\n" + "\n".join(added)
         else:
             msg = "📋 No new sources found with basic search."
-    
+
     await update.message.reply_text(msg)
 
 
@@ -600,25 +604,27 @@ async def handle_image_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> N
 async def handle_debug(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Debug command to check bot status"""
     import os
-    
+
     status_msg = "🔧 **Bot Debug Status**\n\n"
-    
+
     # OpenAI Status
     if openai_client:
         status_msg += "✅ OpenAI: Connected\n"
     else:
         status_msg += "❌ OpenAI: Not available\n"
-    
+
     # Environment Variables
-    status_msg += f"🔑 OPENAI_API_KEY: {'Set' if os.getenv('OPENAI_API_KEY') else 'Missing'}\n"
+    status_msg += (
+        f"🔑 OPENAI_API_KEY: {'Set' if os.getenv('OPENAI_API_KEY') else 'Missing'}\n"
+    )
     status_msg += f"🤖 TELEGRAM_BOT_TOKEN: {'Set' if os.getenv('TELEGRAM_BOT_TOKEN') else 'Missing'}\n"
     status_msg += f"💬 TELEGRAM_CHAT_ID: {'Set' if os.getenv('TELEGRAM_CHAT_ID') else 'Missing'}\n"
     status_msg += f"📊 REDIS_URL: {'Set' if os.getenv('REDIS_URL') else 'Missing'}\n"
-    
+
     # Sources Count
     sources_count = len(store.all())
     status_msg += f"🔗 Sources: {sources_count} configured\n"
-    
+
     # Memory Status
     try:
         user_id = update.effective_user.id
@@ -627,8 +633,8 @@ async def handle_debug(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         status_msg += f"⚙️ User Prefs: {len(prefs)} set\n"
     except Exception as e:
         status_msg += f"🧠 Memory: Error - {e}\n"
-    
-    await update.message.reply_text(status_msg, parse_mode='Markdown')
+
+    await update.message.reply_text(status_msg, parse_mode="Markdown")
 
 
 async def handle_ai_brain(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -653,12 +659,12 @@ async def handle_ai_brain(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     command = parts[1].strip().lower()
-    user_id = update.effective_user.id
-    
+
     # Add brain system prompt
-    brain_messages = [{
-        "role": "system",
-        "content": """You are the AI Brain of the Miles Telegram bot. You can intelligently control the bot's functions:
+    brain_messages = [
+        {
+            "role": "system",
+            "content": """You are the AI Brain of the Miles Telegram bot. You can intelligently control the bot's functions:
 
 AVAILABLE ACTIONS:
 - analyze_sources: Review current source quality and performance
@@ -674,25 +680,26 @@ You have access to:
 - Schedule configuration
 - Brazilian mileage program expertise
 
-When users ask you to do something, provide a detailed action plan and execute it intelligently. Be proactive and autonomous in managing the bot."""
-    }]
-    
+When users ask you to do something, provide a detailed action plan and execute it intelligently. Be proactive and autonomous in managing the bot.""",
+        }
+    ]
+
     brain_messages.append({"role": "user", "content": f"Command: {parts[1]}"})
-    
+
     try:
         await update.message.reply_text("🧠 AI Brain analyzing request...")
-        
+
         # Get AI response
         response = await asyncio.to_thread(
             openai_client.chat.completions.create,
             model="gpt-4o",  # Use more powerful model for brain functions
             messages=brain_messages,
             temperature=0.3,  # Lower temperature for more focused responses
-            max_tokens=1500
+            max_tokens=1500,
         )
-        
+
         ai_response = response.choices[0].message.content
-        
+
         # Execute specific brain commands
         if "analyze" in command:
             await update.message.reply_text("🧠 Analyzing bot performance...")
@@ -708,20 +715,29 @@ When users ask you to do something, provide a detailed action plan and execute i
 {ai_response}
 
 💡 Use `/brain optimize` for specific improvements."""
-            await update.message.reply_text(analysis, parse_mode='Markdown')
-            
+            await update.message.reply_text(analysis, parse_mode="Markdown")
+
         elif "discover" in command:
-            await update.message.reply_text("🧠 AI Brain initiating intelligent source discovery...")
+            await update.message.reply_text(
+                "🧠 AI Brain initiating intelligent source discovery..."
+            )
             added = await asyncio.to_thread(ai_update_sources)
             if added:
-                msg = f"🧠 **Brain Discovery Results:**\n\nFound {len(added)} high-quality sources:\n" + "\n".join(added)
+                msg = (
+                    f"🧠 **Brain Discovery Results:**\n\nFound {len(added)} high-quality sources:\n"
+                    + "\n".join(added)
+                )
             else:
                 msg = "🧠 **Brain Analysis:** Current source list is optimal. No new high-quality sources found."
-            await update.message.reply_text(msg, parse_mode='Markdown')
-            
+            await update.message.reply_text(msg, parse_mode="Markdown")
+
         elif "scan" in command:
-            await update.message.reply_text("🧠 AI Brain running intelligent promotion scan...")
-            alerts = await asyncio.to_thread(bot.run_scan, str(update.effective_chat.id))
+            await update.message.reply_text(
+                "🧠 AI Brain running intelligent promotion scan..."
+            )
+            alerts = await asyncio.to_thread(
+                bot.run_scan, str(update.effective_chat.id)
+            )
             brain_analysis = f"""🧠 **Brain Scan Analysis:**
 
 📈 **Results:** {len(alerts)} promotions found
@@ -729,12 +745,14 @@ When users ask you to do something, provide a detailed action plan and execute i
 🔄 **Recommendation:** {ai_response}
 
 {'🚀 Alerts sent!' if alerts else '⏳ Continue monitoring'}"""
-            await update.message.reply_text(brain_analysis, parse_mode='Markdown')
-            
+            await update.message.reply_text(brain_analysis, parse_mode="Markdown")
+
         else:
             # General AI brain response
-            await update.message.reply_text(f"🧠 **AI Brain Response:**\n\n{ai_response}", parse_mode='Markdown')
-            
+            await update.message.reply_text(
+                f"🧠 **AI Brain Response:**\n\n{ai_response}", parse_mode="Markdown"
+            )
+
     except Exception as e:
         await update.message.reply_text(f"🧠❌ Brain error: {str(e)}")
 
@@ -777,7 +795,7 @@ def main() -> None:
         except Exception as e:
             print(f"[ask_bot] ❌ OpenAI client initialization failed: {e}")
             print("[ask_bot] Chat functionality will be disabled")
-            print(f"[ask_bot] Check OPENAI_API_KEY environment variable")
+            print("[ask_bot] Check OPENAI_API_KEY environment variable")
             openai_client = None
 
         print("[ask_bot] Starting health server...")
@@ -819,7 +837,7 @@ def main() -> None:
 
         # Image handler for multimodal chat
         app.add_handler(MessageHandler(filters.PHOTO, handle_image_chat))
-        
+
         # Debug and AI Brain commands
         app.add_handler(CommandHandler("debug", handle_debug))
         app.add_handler(CommandHandler("brain", handle_ai_brain))

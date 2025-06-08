@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from urllib.parse import urlparse, parse_qs, unquote, quote_plus
 
-import yaml
 import requests
 from bs4 import BeautifulSoup, Tag
 
@@ -46,35 +45,52 @@ def search_new_sources() -> list[str]:
 
 def update_sources() -> list[str]:
     from miles.source_store import SourceStore
-    
+
     # Get current sources from SourceStore instead of YAML directly
     store = SourceStore()
     current = store.all()
     existing = set(current)
     found: list[str] = []
-    
+
     # Search for new sources
     search_results = search_new_sources()
-    print(f"[source_search] Found {len(search_results)} potential sources from DuckDuckGo")
-    
-    # Filter out existing sources  
+    print(
+        f"[source_search] Found {len(search_results)} potential sources from DuckDuckGo"
+    )
+
+    # Filter out existing sources
     for url in search_results:
         if url not in existing:
             # Additional filtering for mileage-related domains
             domain = url.lower()
-            if any(keyword in domain for keyword in ['milhas', 'miles', 'pontos', 'smiles', 'azul', 'latam', 'gol']):
+            if any(
+                keyword in domain
+                for keyword in [
+                    "milhas",
+                    "miles",
+                    "pontos",
+                    "smiles",
+                    "azul",
+                    "latam",
+                    "gol",
+                ]
+            ):
                 if store.add(url):  # Use SourceStore to add
                     found.append(url)
                     print(f"[source_search] Added new source: {url}")
                 else:
                     print(f"[source_search] Failed to add source: {url}")
-    
+
     if found:
         try:
-            send_telegram(f"🔍 Found {len(found)} new mileage sources:\n" + "\n".join(found))
+            send_telegram(
+                f"🔍 Found {len(found)} new mileage sources:\n" + "\n".join(found)
+            )
         except Exception as e:
             print(f"[source_search] Failed to send telegram: {e}")
     else:
-        print(f"[source_search] No new sources found (checked {len(search_results)} candidates)")
-    
+        print(
+            f"[source_search] No new sources found (checked {len(search_results)} candidates)"
+        )
+
     return found
