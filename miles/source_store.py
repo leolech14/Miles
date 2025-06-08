@@ -44,45 +44,74 @@ class SourceStore:
     # public API ---------------------------------------------------------
     def all(self) -> List[str]:
         if not self.r:
-            return []
+            # Fall back to reading from YAML file when Redis is not available
+            try:
+                with open(self.yaml_path) as f:
+                    data: List[str] = yaml.safe_load(f) or []
+                return sorted(data)
+            except FileNotFoundError:
+                return []
         sources = self.r.smembers("sources")
         # smembers returns a set of strings when decode_responses=True
         return sorted(sources)
 
     def add(self, url: str) -> bool:
-        if not self.r:
-            print(
-                "[source_store] Redis is not connected. Cannot add source.",
-                file=sys.stderr,
-            )
-            return False
         if not url.startswith("http") or len(url) > 200:
             logging.warning("Rejected invalid URL: %s", url)
             return False
         if url in self.all():
             return False
+
+        if not self.r:
+            # Fall back to file storage when Redis is not available
+            try:
+                current_sources = self.all()
+                current_sources.append(url)
+                with open(self.yaml_path, "w") as f:
+                    yaml.safe_dump(sorted(current_sources), f)
+                return True
+            except Exception as e:
+                print(
+                    f"[source_store] Failed to add source to file: {e}", file=sys.stderr
+                )
+                return False
+
         added: bool = (
             self.r.sadd("sources", url) == 1
         )  # Explicitly define `added` as bool
         if added:
-            self.needs_flush = True
+            self._flush_to_yaml()
         return added
 
     def remove(self, token: str) -> str | None:
-        if not self.r:
-            print(
-                "[source_store] Redis is not connected. Cannot remove source.",
-                file=sys.stderr,
-            )
-            return None
+        # Determine target URL
         target = None
+        all_sources = self.all()
         if token.isdigit():
             try:
-                target = self.all()[int(token) - 1]
+                target = all_sources[int(token) - 1]
             except IndexError:
                 return None
         else:
             target = token
+
+        if target not in all_sources:
+            return None
+
+        if not self.r:
+            # Fall back to file storage when Redis is not available
+            try:
+                updated_sources = [s for s in all_sources if s != target]
+                with open(self.yaml_path, "w") as f:
+                    yaml.safe_dump(sorted(updated_sources), f)
+                return target
+            except Exception as e:
+                print(
+                    f"[source_store] Failed to remove source from file: {e}",
+                    file=sys.stderr,
+                )
+                return None
+
         removed = self.r.srem("sources", target)
         if removed:
             self._flush_to_yaml()
