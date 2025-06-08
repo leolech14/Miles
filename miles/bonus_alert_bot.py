@@ -513,7 +513,7 @@ async def plugins_cmd(update: Update, context: CallbackContext) -> None:
 
         text = "\n".join(lines)
 
-    elif action == "test" and len(args) >= 2:
+    elif action == "test" and args and len(args) >= 2:
         plugin_name = args[1]
         plugins = discover_plugins()
 
@@ -535,7 +535,7 @@ async def plugins_cmd(update: Update, context: CallbackContext) -> None:
             except Exception as e:
                 text = f"❌ <b>Plugin Test Failed: {plugin_name}</b>\n\nError: {str(e)}\n\nCheck plugin implementation and dependencies."
 
-    elif action == "info" and len(args) >= 2:
+    elif action == "info" and args and len(args) >= 2:
         plugin_name = args[1]
         plugins = discover_plugins()
 
@@ -572,18 +572,25 @@ async def plugins_cmd(update: Update, context: CallbackContext) -> None:
 • <code>/plugins test demo-hello</code>
 • <code>/plugins info demo-hello</code>"""
 
-    await update.message.reply_text(
-        text, parse_mode=ParseMode.HTML, disable_web_page_preview=True
-    )
+    if update.message:
+        await update.message.reply_text(
+            text, parse_mode=ParseMode.HTML, disable_web_page_preview=True
+        )
 
 
 # ───────────────────────── Dynamic /config ──────────────────────
-async def config_cmd(update: Update, context: CallbackContext) -> None:
+async def config_cmd(
+    update: Update, context: CallbackContext[object, object, object, object]
+) -> None:
+    if not update.effective_chat:
+        return
     chat_id = update.effective_chat.id
     gpt_state = "ON ✅" if _chat_enabled(chat_id) else "OFF ❌"
     max_tok = _R.get(KEY_MAX_TOKENS) or "1000 (default)"
     # ⬇︎ build list from dispatcher so it never goes stale
-    app: Application = context.application
+    app: Application[object, object, object, object, object, object] = (
+        context.application
+    )
     lines: List[str] = [
         "<b>🤖 Current Configuration</b>",
         "",
@@ -593,17 +600,23 @@ async def config_cmd(update: Update, context: CallbackContext) -> None:
         "",
         "<b>Available Commands</b>",
     ]
-    for cmd in sorted(app.commands):  # auto-populate!
-        if cmd.startswith("_"):  # internal
-            continue
-        lines.append(f"• /{cmd}")
-    await update.message.reply_text(
-        "\n".join(lines), parse_mode=ParseMode.HTML, disable_web_page_preview=True
-    )
+
+    # Get commands from handlers instead of app.commands (which doesn't exist)
+    handlers = app.handlers.get(0, [])  # Get default group handlers
+    for handler in handlers:
+        if hasattr(handler, "commands") and handler.commands:
+            for cmd in handler.commands:
+                if not cmd.startswith("_"):  # skip internal commands
+                    lines.append(f"• /{cmd}")
+
+    if update.message:
+        await update.message.reply_text(
+            "\n".join(lines), parse_mode=ParseMode.HTML, disable_web_page_preview=True
+        )
 
 
 # ───────────────────────── Build application ────────────────────
-def build_app() -> Application:
+def build_app() -> Application[object, object, object, object, object, object]:
     builder = (
         ApplicationBuilder()
         .token(_SETTINGS.telegram_bot_token)
@@ -737,7 +750,8 @@ async def main() -> None:
     app = build_app()
     await app.initialize()
     await app.start()
-    await app.updater.start_polling()
+    if app.updater:
+        await app.updater.start_polling()
     await asyncio.Event().wait()
 
 
