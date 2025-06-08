@@ -20,6 +20,7 @@ jobs:
       - name: "Create app if needed"
         run: |
           fly apps create miles --generate-name=false || echo "App already exists"
+          fly ips allocate-v4 --app miles || echo "IP already allocated"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: "Push secrets to Fly"
@@ -44,5 +45,14 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Check Machine Status
         run: fly machine status -i 080137ef300d58 || true
+      - name: Show app info
+        run: |
+          fly apps list | grep miles || echo "App not found in list"
+          fly status --app miles || echo "Status check failed"
+          fly ips list --app miles || echo "No IPs allocated"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: Retrieve Machine Logs
-        run: fly logs -i 080137ef300d58 || true
+        run: fly logs --app miles || true
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
