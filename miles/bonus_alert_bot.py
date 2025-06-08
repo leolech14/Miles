@@ -8,6 +8,7 @@ Telegram chat when a new promotion is detected.
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import Final, List, Set, Tuple
 
 import redis
@@ -39,6 +40,12 @@ logger = setup_logging().getChild(__name__)
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 }
+
+MIN_BONUS = int(os.getenv("MIN_BONUS", "100"))  # Minimum bonus percentage to alert
+
+# ───────────────────────── Global stores ────────────────────────
+from miles.source_store import SourceStore
+STORE = SourceStore()
 
 # ───────────────────────── Redis helpers ─────────────────────────
 _SETTINGS = get_settings()
@@ -191,6 +198,17 @@ def build_app() -> Application:
     return app
 
 
+# ───────────────────────── Utility functions ─────────────────────
+def fetch(url: str) -> str | None:
+    """Fetch content from a URL"""
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        return response.text
+    except Exception as e:
+        print(f"Failed to fetch {url}: {e}")
+        return None
+
+
 # ───────────────────────── Telegram utilities ───────────────────
 def send_telegram(message: str, chat_id: str | None = None) -> None:
     """Send telegram message (placeholder implementation)"""
@@ -219,10 +237,50 @@ def send_telegram(message: str, chat_id: str | None = None) -> None:
 
 # ───────────────────────── Scanning functions ────────────────────
 def scan_programs(seen: Set[str]) -> List[Tuple[int, str, str]]:
-    """Scan programs for bonuses (placeholder implementation)"""
-    # This is a placeholder that would normally scan mileage program websites
-    # Returns list of (bonus_percentage, source_name, details)
-    return []
+    """Scan programs for bonuses"""
+    alerts: List[Tuple[int, str, str]] = []
+    sources = STORE.all() if STORE else []
+    
+    for source_url in sources:
+        try:
+            content = fetch(source_url)
+            if content:
+                parse_feed(source_url, source_url, seen, alerts)
+        except Exception as e:
+            print(f"Error scanning {source_url}: {e}")
+    
+    return alerts
+
+
+def parse_feed(name: str, url: str, seen: Set[str], alerts: List[Tuple[int, str, str]]) -> None:
+    """Parse feed content for bonus alerts"""
+    content = fetch(url)
+    if not content:
+        return
+    
+    import re
+    from urllib.parse import urlparse
+    
+    # Look for bonus percentages in content
+    bonus_patterns = [
+        r'(\d+)%\s*b[oô]nus',
+        r'transferência.*?(\d+)%',
+        r'(\d+)%.*?transfer',
+    ]
+    
+    for pattern in bonus_patterns:
+        matches = re.findall(pattern, content.lower())
+        for match in matches:
+            try:
+                bonus = int(match)
+                if bonus >= MIN_BONUS:
+                    domain = urlparse(url).netloc
+                    alert_key = f"{domain}_{bonus}"
+                    if alert_key not in seen:
+                        seen.add(alert_key)
+                        alerts.append((bonus, domain, f"Transferência {bonus}% bônus"))
+            except ValueError:
+                continue
 
 
 async def run_scan() -> None:
