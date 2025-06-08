@@ -16,7 +16,7 @@ Environment variables:
 ## Quick start
 
 1. Configure the secrets `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `MIN_BONUS`,
-   `FLY_API_TOKEN` and optionally `SOURCES_PATH` in your GitHub repository.
+   `FLY_API_TOKEN`, `OPENAI_API_KEY` and optionally `SOURCES_PATH` in your GitHub repository.
 
 2. Create the Fly.io app (run once):
 
@@ -34,6 +34,8 @@ To run everything locally:
 ```bash
 docker compose up
 ```
+
+**Note**: For `/chat` command to work, you need to set the `OPENAI_API_KEY` environment variable or Fly.io secret.
 
 After cloning the repository, install the development extras and run the checks:
 
@@ -158,6 +160,29 @@ All received logs are stored in `received_logs/<run_id>.ndjson` for offline anal
 ### Rotate webhook URL
 
 When your ngrok URL changes, update the `LOG_WEBHOOK_URL` secret in GitHub repository settings → Secrets and variables → Actions.
+
+## Troubleshooting
+
+### Chat command not working
+
+If you get "❌ Chat feature is not available. OpenAI API key not configured":
+
+1. **Local development**: Set environment variable
+   ```bash
+   export OPENAI_API_KEY="your-api-key-here"
+   ```
+
+2. **Fly.io deployment**: Set secret and redeploy
+   ```bash
+   fly secrets set OPENAI_API_KEY="your-api-key-here"
+   fly deploy
+   ```
+
+3. **Verify deployment**: Check logs
+   ```bash
+   fly logs
+   ```
+   Look for: `[ask_bot] OpenAI client initialized`
 
 ## Development
 
