@@ -46,6 +46,10 @@ miles-ask = "ask_bot:main"
 
 [project.entry-points.milesbot_plugins]
 demo_hello = "plugins.demo_hello:HelloPlugin"
+source_discovery = "plugins.source_discovery:SourceDiscoveryPlugin"
+smiles_monitor = "plugins.smiles_monitor:SmilesMonitorPlugin"
+livelo_scanner = "plugins.livelo_scanner:LiveloScannerPlugin"
+latam_tracker = "plugins.latam_tracker:LatamTrackerPlugin"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -55,7 +55,13 @@ def register_with_scheduler(scheduler: BaseScheduler) -> None:
             try:
                 promos: List[Promo] = await _maybe_async(plg.scrape, now)
                 logger.info("Plug-in %s produced %d promos", plg.name, len(promos))
-                # TODO: persistence + notification goes here in next slice
+
+                # Process promos through storage and notification system
+                if promos:
+                    from miles.promo_store import process_plugin_promos
+
+                    process_plugin_promos(promos)
+
             except Exception:  # noqa: BLE001
                 logger.exception("Plug-in %s execution failed", plg.name)
 

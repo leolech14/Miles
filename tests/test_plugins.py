@@ -1,4 +1,5 @@
 """Tests for the plugin system."""
+
 from datetime import datetime
 
 from miles.plugin_loader import discover_plugins
@@ -7,11 +8,11 @@ from miles.plugin_loader import discover_plugins
 def test_plugin_discovery():
     """Test that plugins can be discovered via entry points."""
     plugins = discover_plugins()
-    
+
     # Should find at least our demo plugin
     assert len(plugins) >= 1
     assert "demo-hello" in plugins
-    
+
     # Test the demo plugin
     demo = plugins["demo-hello"]
     assert demo.name == "demo-hello"
@@ -23,11 +24,11 @@ def test_plugin_scrape():
     """Test that plugins can be scraped."""
     plugins = discover_plugins()
     demo = plugins["demo-hello"]
-    
+
     # Test scraping
     promos = demo.scrape(datetime.now())
     assert len(promos) == 1
-    
+
     promo = promos[0]
     assert promo["program"] == "DEMO"
     assert promo["bonus_pct"] == 42
