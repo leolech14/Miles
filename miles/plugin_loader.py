@@ -44,6 +44,7 @@ def discover_plugins() -> Dict[str, Plugin]:
 
     return found
 
+
 def register_with_scheduler(scheduler: BaseScheduler) -> None:
     """
     Add every discovered plug-in to the running APScheduler instance.
