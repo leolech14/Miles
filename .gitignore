@@ -6,3 +6,5 @@ pytest_cache/
 *.egg-info/
 history/
 received_logs/
+chat_history/
+user_preferences/
