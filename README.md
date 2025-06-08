@@ -54,8 +54,9 @@ Edit `sources.yaml` to change which pages are scanned.
 | `/sources` | List current sources |
 | `/addsrc <url>` | Add a new source URL |
 | `/rmsrc <id_or_url>` | Remove a source by index or full URL |
-| `/update` | Search the web for new sources |
+| `/update` | AI-powered search for new sources |
 | `/chat <text>` | Talk with the integrated AI assistant |
+| `/brain <command>` | Let AI control and optimize the bot |
 | `/config` | Show current configuration and available commands |
 | `/setmodel <model>` | Change AI model (gpt-4o-mini, gpt-4o, etc.) |
 | `/settemp <0.0-2.0>` | Set AI response temperature |
@@ -66,6 +67,19 @@ Edit `sources.yaml` to change which pages are scanned.
 | `/setscantime <hours>` | Set promotion scan times (e.g., 8,20) |
 | `/setupdatetime <hour>` | Set source update time (e.g., 7) |
 | `/end` | Clear chat context |
+| `/debug` | Show bot status and diagnostics |
+
+## AI Brain Commands
+
+The `/brain` command gives AI autonomous control over the bot:
+
+| Brain Command | Action |
+|---------------|--------|
+| `/brain analyze` | AI analyzes bot performance and suggests improvements |
+| `/brain discover` | AI intelligently discovers new mileage sources |
+| `/brain scan` | AI runs and analyzes promotion scans |
+| `/brain optimize` | AI optimizes settings and configuration |
+| `/brain <question>` | Ask AI to control any aspect of the bot |
 
 ## ChatGPT mode
 

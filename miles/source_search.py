@@ -45,23 +45,36 @@ def search_new_sources() -> list[str]:
 
 
 def update_sources() -> list[str]:
-    try:
-        with open(SOURCES_PATH) as f:
-            current: list[str] = yaml.safe_load(f)
-    except FileNotFoundError:
-        current = []
+    from miles.source_store import SourceStore
+    
+    # Get current sources from SourceStore instead of YAML directly
+    store = SourceStore()
+    current = store.all()
     existing = set(current)
     found: list[str] = []
-    for url in search_new_sources():
+    
+    # Search for new sources
+    search_results = search_new_sources()
+    print(f"[source_search] Found {len(search_results)} potential sources from DuckDuckGo")
+    
+    # Filter out existing sources  
+    for url in search_results:
         if url not in existing:
-            current.append(url)
-            existing.add(url)
-            found.append(url)
+            # Additional filtering for mileage-related domains
+            domain = url.lower()
+            if any(keyword in domain for keyword in ['milhas', 'miles', 'pontos', 'smiles', 'azul', 'latam', 'gol']):
+                if store.add(url):  # Use SourceStore to add
+                    found.append(url)
+                    print(f"[source_search] Added new source: {url}")
+                else:
+                    print(f"[source_search] Failed to add source: {url}")
+    
     if found:
-        with open(SOURCES_PATH, "w") as f:
-            yaml.safe_dump(current, f, sort_keys=False)
         try:
-            send_telegram("Novas fontes adicionadas:\n" + "\n".join(found))
-        except Exception:
-            pass
+            send_telegram(f"🔍 Found {len(found)} new mileage sources:\n" + "\n".join(found))
+        except Exception as e:
+            print(f"[source_search] Failed to send telegram: {e}")
+    else:
+        print(f"[source_search] No new sources found (checked {len(search_results)} candidates)")
+    
     return found

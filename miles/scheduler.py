@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from miles.bonus_alert_bot import run_scan
 from miles.source_search import update_sources
+from miles.ai_source_discovery import ai_update_sources
 from miles.schedule_config import ScheduleConfig
 
 
@@ -22,13 +23,13 @@ def setup_scheduler() -> None:
     # Load configuration
     config = ScheduleConfig().get_config()
 
-    # Add jobs based on configuration
+    # Add jobs based on configuration - use AI discovery
     _scheduler.add_job(
-        update_sources,
+        ai_update_sources,
         "cron",
         hour=config["update_hour"],
         minute=0,
-        id="update_sources",
+        id="ai_update_sources",
     )
 
     scan_hours = config["scan_hours"]
