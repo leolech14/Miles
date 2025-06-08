@@ -44,6 +44,9 @@ dev = [
 miles-scan = "bonus_alert_bot:main"
 miles-ask = "ask_bot:main"
 
+[project.entry-points.milesbot_plugins]
+demo_hello = "plugins.demo_hello:HelloPlugin"
+
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["tests"]

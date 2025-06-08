@@ -12,6 +12,7 @@ from miles.schedule_config import ScheduleConfig
 from miles.source_search import update_sources
 from miles.ai_source_discovery import ai_update_sources
 from miles.bonus_alert_bot import run_scan
+from miles.plugin_loader import register_with_scheduler
 
 """
 AsyncIO-based cron scheduler.  Import `setup_scheduler()` during application
@@ -44,6 +45,9 @@ def setup_scheduler() -> None:
     # Main scan jobs – possibly multiple hours per day
     for hour in cfg["scan_hours"]:
         _scheduler.add_job(run_scan, "cron", hour=hour, minute=0, id=f"scan_{hour}")
+
+    # NEW: register third-party plug-ins
+    register_with_scheduler(_scheduler)
 
     _scheduler.start()
     logger.info("Scheduler started with %s job(s)", len(_scheduler.get_jobs()))

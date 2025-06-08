@@ -12,6 +12,7 @@ Environment variables:
 - `OPENAI_API_KEY` – required for the `/chat` command and AI features
 - `REDIS_URL` – Redis connection for chat history and preferences (falls back to file storage)
 - `LOG_WEBHOOK_URL` – webhook URL for CI log streaming (optional)
+- `PLUGINS_ENABLED` – comma-separated list of plugin IDs to enable (optional, defaults to all)
 
 ## Quick start
 
@@ -146,6 +147,51 @@ context. Set `OPENAI_API_KEY` to enable this feature.
   > "Azul Fidelidade oferece até 80% de bônus na transferência de pontos – veja como participar"<br>
   Fonte: <https://guiadomilheiro.com.br/azul-fidelidade-oferece-ate-80-de-bonus-na-transferencia-de-pontos-veja-como-participar/>
 
+## Plugin System
+
+Miles now supports a modular plugin architecture for extensible functionality:
+
+### Creating Plugins
+
+Create a plugin by implementing the `Plugin` protocol:
+
+```python
+from datetime import datetime
+from typing import List
+from miles.plugin_api import Plugin, Promo
+
+class MyPlugin:
+    name = "my-plugin"
+    schedule = "@hourly"  # or cron: "0 */6 * * *"
+    categories = ["bonus"]
+    
+    def scrape(self, since: datetime) -> List[Promo]:
+        return [
+            Promo(
+                program="MY_PROGRAM",
+                bonus_pct=100,
+                url="https://example.com",
+                title="Amazing 100% bonus!",
+                source=self.name,
+            )
+        ]
+```
+
+### Registering Plugins
+
+Add to `pyproject.toml`:
+
+```toml
+[project.entry-points.milesbot_plugins]
+my_plugin = "path.to.my_plugin:MyPlugin"
+```
+
+### Plugin Control
+
+- **Enable specific plugins**: `PLUGINS_ENABLED="plugin1,plugin2"`
+- **Enable all plugins**: Leave `PLUGINS_ENABLED` unset
+- **Disable all plugins**: `PLUGINS_ENABLED=""`
+
 ## Architecture
 
 ```mermaid
@@ -153,6 +199,8 @@ flowchart TD
     User-->|Telegram|Bot
     Bot-->|/ask, /sources, /addsrc|Core
     Core-->|Scrape|Sources
+    Core-->|Load|Plugins
+    Plugins-->|Schedule|Scraper
     Core-->|Chat|OpenAI
     Core-->|Store context|Redis
     CI-->|Build/Test/Deploy|Docker
