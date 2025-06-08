@@ -8,10 +8,11 @@ Telegram chat when a new promotion is detected.
 from __future__ import annotations
 
 import asyncio
-from typing import Final, List
+from typing import Final, List, Set, Tuple
 
 import redis
 import aiohttp
+import requests
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import (
@@ -33,6 +34,11 @@ from miles.logging_config import setup_logging
 
 
 logger = setup_logging().getChild(__name__)
+
+# ───────────────────────── Constants ────────────────────────────
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+}
 
 # ───────────────────────── Redis helpers ─────────────────────────
 _SETTINGS = get_settings()
@@ -183,6 +189,55 @@ def build_app() -> Application:
     # Catch-all text
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
+
+
+# ───────────────────────── Telegram utilities ───────────────────
+def send_telegram(message: str, chat_id: str | None = None) -> None:
+    """Send telegram message (placeholder implementation)"""
+    import os
+    
+    token = os.getenv("TELEGRAM_BOT_TOKEN", _SETTINGS.telegram_bot_token)
+    if not token or token == "not_set":
+        print(f"[TELEGRAM] {message}")
+        return
+        
+    target_chat = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
+    if not target_chat:
+        print(f"[TELEGRAM] {message}")
+        return
+    
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": target_chat, "text": message},
+            timeout=10
+        )
+    except Exception as e:
+        print(f"[TELEGRAM ERROR] {e}: {message}")
+
+
+# ───────────────────────── Scanning functions ────────────────────
+def scan_programs(seen: Set[str]) -> List[Tuple[int, str, str]]:
+    """Scan programs for bonuses (placeholder implementation)"""
+    # This is a placeholder that would normally scan mileage program websites
+    # Returns list of (bonus_percentage, source_name, details)
+    return []
+
+
+async def run_scan() -> None:
+    """Run the main scanning process"""
+    print("Running mileage program scan...")
+    seen: Set[str] = set()
+    alerts = scan_programs(seen)
+    
+    if alerts:
+        for bonus, source, details in alerts:
+            message = f"🎯 {bonus}% bonus found on {source}: {details}"
+            send_telegram(message)
+            print(f"Alert: {message}")
+    else:
+        print("No new bonuses found")
 
 
 # ───────────────────────── Entrypoint ───────────────────────────
