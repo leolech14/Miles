@@ -6,218 +6,192 @@ Monitor official mileage program pages for point transfer bonuses and alert a
 Telegram chat when a new promotion is detected.
 """
 from __future__ import annotations
-import os
-import re
-import json
-import time
-import warnings
-import requests
-import feedparser
-from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
-from urllib.parse import urlparse
-from bs4.element import Tag
-import hashlib
-from miles.source_store import SourceStore
+
+import asyncio
+from typing import Final, List
+
+import redis
+import aiohttp
+from telegram import Update
+from telegram.constants import ParseMode
+from telegram.ext import (
+    AIORateLimiter,
+    Application,
+    ApplicationBuilder,
+    CallbackContext,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
+
+# Update the import path if config.py is in a subdirectory, e.g.:
+# from .config import get_settings
+# Or, if config.py does not exist, create it with a get_settings function.
+from config import get_settings
 from miles.logging_config import setup_logging
-import logging
-
-setup_logging()
-logger = logging.getLogger("miles.bonus_alert_bot")
-
-warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
-
-# ------------- CONFIGURAÇÃO PRINCIPAL -----------------
-MIN_BONUS = int(os.getenv("MIN_BONUS", 80))
-DEBUG_ALWAYS = os.getenv("DEBUG_MODE", "False") == "True"
-TIMEOUT = 25
-
-STORE = SourceStore(os.getenv("SOURCES_PATH", "sources.yaml"))
-
-HEADERS = {"User-Agent": "Mozilla/5.0 (BonusAlertBot)"}
-PROXY_TPL = [
-    "https://api.allorigins.win/raw?url={u}",
-    "https://r.jina.ai/http://{u}",
-]
-
-BONUS_PCT_RE = re.compile(r"(?P<pct>\d{2,3})\s*%.*?(b[oô]nus|bonus)", re.I)
-DOBRO_RE = re.compile(r"\b(dobro|duplicar|2x)\b", re.I)
-
-# Regex helpers for optional extraction
-PCT_RE = re.compile(r"(\d{2,3})%")
-URL_RE = re.compile(r"https?://\S+")
 
 
-def extract_pct(text: str) -> str | None:
-    m = PCT_RE.search(text)
-    return m.group(1) if m else None
+logger = setup_logging().getChild(__name__)
+
+# ───────────────────────── Redis helpers ─────────────────────────
+_SETTINGS = get_settings()
+_R: Final = redis.from_url(_SETTINGS.redis_url, decode_responses=True)
+
+KEY_GPT_CHAT = "miles:gpt_mode:{chat_id}"  # per-chat toggle
+KEY_GPT_GLOBAL = "miles:gpt_mode:global"  # global toggle (0 / 1)
+KEY_MAX_TOKENS = "miles:openai:max_tokens"  # int
 
 
-def extract_url(text: str) -> str | None:
-    m = URL_RE.search(text)
-    return m.group(0) if m else None
+def _chat_enabled(chat_id: int) -> bool:
+    global_flag = _R.get(KEY_GPT_GLOBAL) == "1"
+    local_flag = _R.get(KEY_GPT_CHAT.format(chat_id=chat_id)) == "1"
+    return global_flag or local_flag
 
 
-# ----------------- UTIL ----------------------------
-
-
-def fetch(url: str) -> str | None:
-    try:
-        return requests.get(url, headers=HEADERS, timeout=TIMEOUT).text
-    except Exception:
-        for tpl in PROXY_TPL:
-            prox = tpl.format(u=url)
-            try:
-                return requests.get(prox, headers=HEADERS, timeout=TIMEOUT).text
-            except Exception:
-                continue
-    return None
-
-
-def parse_feed(
-    name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]
-) -> None:
-    raw = fetch(url)
-    if not raw:
-        return
-    if url.endswith((".rss", ".xml")) or raw.strip().startswith("<?xml"):
-        feed = feedparser.parse(raw)
-        entries = feed.entries
-        for e in entries:
-            text = (e.title + " " + e.get("summary", ""))[:400]
-            link = e.link
-            handle_text(name, text, link, seen, alerts)
+# ───────────────────────── GPT toggles ──────────────────────────
+async def _toggle_chat(chat_id: int, enabled: bool) -> None:
+    if enabled:
+        _R.set(KEY_GPT_CHAT.format(chat_id=chat_id), "1")
     else:
-        soup = BeautifulSoup(raw, "html.parser")
-
-        for itm in soup.find_all(["item", "article", "entry", "h2", "h3"]):
-            item = itm if isinstance(itm, Tag) else Tag(name="")
-            text = item.get_text(" ")[:400]
-            a_tag = item.find("a")
-            if isinstance(a_tag, Tag):
-                href = a_tag.get("href")
-                link = href if isinstance(href, str) else url
-            else:
-                link = url
-            handle_text(name, text, link, seen, alerts)
+        _R.delete(KEY_GPT_CHAT.format(chat_id=chat_id))
 
 
-def handle_text(
-    src: str, text: str, link: str, seen: set[str], alerts: list[tuple[int, str, str]]
-) -> None:
-    text_norm = " ".join(text.split())
-    pct_match = BONUS_PCT_RE.search(text_norm)
-    pct: int | None = int(pct_match.group("pct")) if pct_match else None
-    has_transfer = re.search(r"transf", text_norm, re.I) is not None
+async def gpt_on(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _toggle_chat(update.effective_chat.id, True)
+    await update.effective_message.reply_text("🤖 GPT chat mode is ON.")
 
-    if pct is not None and not has_transfer:
-        pct = None
 
-    if pct is None and DOBRO_RE.search(text_norm) and has_transfer:
-        pct = 100
+async def gpt_off(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _toggle_chat(update.effective_chat.id, False)
+    await update.effective_message.reply_text("🛑 GPT chat mode is OFF.")
 
-    if pct is None:
+
+async def gpt_global(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles /gpt-global-on and /gpt-global-off"""
+    enable = update.message.text.endswith("on")
+    _R.set(KEY_GPT_GLOBAL, "1" if enable else "0")
+    state = "ON" if enable else "OFF"
+    await update.effective_message.reply_text(f"🌐 GPT GLOBAL mode {state}")
+
+
+# ───────────────────────── OpenAI settings ──────────────────────
+async def set_max_tokens(update: Update, context: CallbackContext) -> None:
+    if not context.args:
+        await update.message.reply_text("Usage: /setmaxtokens <100-4096>")
         return
-    if pct < MIN_BONUS and not DEBUG_ALWAYS:
-        return
-    sig = f"{pct}|{link.split('?')[0]}"
-    if sig in seen:
-        return
-    alerts.append((pct, src, link))
-    seen.add(sig)
-
-
-# ----------------- TELEGRAM ------------------------
-
-
-def send_telegram(msg: str, chat_id: str | None = None) -> None:
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat = chat_id or os.getenv("TELEGRAM_CHAT_ID")
-    if not token or not chat:
-        raise RuntimeError("Telegram credentials are missing")
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    r = requests.post(
-        url,
-        data={
-            "chat_id": chat,
-            "text": msg,
-            "disable_web_page_preview": True,
-        },
-        timeout=15,
-    )
-    print("[TG]", r.status_code, r.text[:120])
-    r.raise_for_status()
-
-
-# ----------------- STORE ---------------------------
-
-
-class Store:
-    def __init__(self, path: str = "seen_alerts.json"):
-        self.path = path
-        try:
-            with open(self.path, "r") as f:
-                self._data = set(json.load(f))
-        except (FileNotFoundError, json.JSONDecodeError):
-            self._data = set()
-
-    def has(self, key: str) -> bool:
-        return key in self._data
-
-    def add(self, key: str) -> None:
-        self._data.add(key)
-        self._save()
-
-    def _save(self) -> None:
-        """Save the alerts to a JSON file."""
-        with open(self.path, "w") as f:
-            json.dump(list(self._data), f)
-
-
-def get_store() -> Store:
-    return Store()
-
-
-# ----------------- MAIN ----------------------------
-
-
-def scan_programs(seen: set[str]) -> list[tuple[int, str, str]]:
-    """Check all program sources and return found alerts."""
-    alerts: list[tuple[int, str, str]] = []
-    print(f"=== BonusAlertBot busca ≥ {MIN_BONUS}% ===")
-    for url in STORE.all():
-        name = urlparse(url).netloc
-        parse_feed(name, url, seen, alerts)
-    if DEBUG_ALWAYS and not alerts:
-        alerts.append((0, "Debug", "https://example.com"))
-    return alerts
-
-
-def run_scan(chat_id: str | None = None) -> list[tuple[int, str, str]]:
-    """Run a scan and send Telegram messages for new promos."""
-    store = get_store()
-    seen: set[str] = set()
-    alerts = scan_programs(seen)
-    for pct, src, link in alerts:
-        h = hashlib.sha1(f"{pct}{link}".encode()).hexdigest()
-        if store.has(h):
-            continue
-        line = f"\U0001f4e3 {pct}% \xb7 {src}\n{link}"
-        try:
-            send_telegram(line, chat_id)
-        except Exception as e:
-            print("[ERROR] Telegram", e)
-        store.add(h)
-    return alerts
-
-
-def main() -> None:
     try:
-        start = time.time()
-        alerts = run_scan()
-        logger.info(f"Duration {round(time.time()-start,1)}s | alerts: {len(alerts)}")
-    except Exception:
-        logger.exception("Fatal error in main bot loop")
+        n = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("Must be an integer.")
+        return
+    if not 100 <= n <= 4096:  # inclusive upper bound fixed
+        await update.message.reply_text("Value must be 100-4096.")
+        return
+    _R.set(KEY_MAX_TOKENS, str(n))
+    await update.message.reply_text(f"✅ Max tokens set to {n}")
+
+
+# ───────────────────────── Diagnostics ──────────────────────────
+async def diag(update: Update, _: CallbackContext) -> None:
+    """Ping OpenAI and Redis; return status."""
+    async with aiohttp.ClientSession() as sess:
+        try:
+            async with sess.get("https://api.openai.com/v1/models", timeout=8) as r:
+                ok = r.status == 200
+        except Exception as exc:  # noqa: BLE001
+            ok = False
+            logger.exception("OpenAI ping failed: %s", exc)
+    redis_ok = True
+    try:
+        _R.ping()
+    except redis.RedisError:
+        redis_ok = False
+    await update.message.reply_text(
+        f"🔧 Diagnostics\n• OpenAI API: {'OK ✅' if ok else 'FAIL ❌'}\n"
+        f"• Redis: {'OK ✅' if redis_ok else 'FAIL ❌'}"
+    )
+
+
+# ───────────────────────── Text handler ─────────────────────────
+async def call_gpt(prompt: str, max_tokens: int = 1000) -> str:
+    # Dummy implementation; replace with actual OpenAI API call as needed
+    return f"Echo: {prompt[:max_tokens]}"
+
+async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not _chat_enabled(update.effective_chat.id):
+        return
+    prompt = (update.effective_message.text or "").strip()
+    if not prompt:
+        return
+    try:
+        await update.effective_chat.send_action(action="typing")
+        max_tok = int(_R.get(KEY_MAX_TOKENS) or 1000)
+        answer = await call_gpt(prompt, max_tokens=max_tok)
+        await update.effective_message.reply_text(answer, parse_mode=ParseMode.MARKDOWN)
+    except Exception:  # noqa: BLE001
+        logger.exception("GPT call failed")
+        await update.effective_message.reply_text("⚠️ LLM unavailable.")
+
+
+# ───────────────────────── Dynamic /config ──────────────────────
+async def config_cmd(update: Update, context: CallbackContext) -> None:
+    chat_id = update.effective_chat.id
+    gpt_state = "ON ✅" if _chat_enabled(chat_id) else "OFF ❌"
+    max_tok = _R.get(KEY_MAX_TOKENS) or "1000 (default)"
+    # ⬇︎ build list from dispatcher so it never goes stale
+    app: Application = context.application
+    lines: List[str] = [
+        "<b>🤖 Current Configuration</b>",
+        "",
+        "<b>OpenAI</b>",
+        f"• GPT per-chat: <b>{gpt_state}</b>",
+        f"• Max Tokens: <b>{max_tok}</b>",
+        "",
+        "<b>Available Commands</b>",
+    ]
+    for cmd in sorted(app.commands):  # auto-populate!
+        if cmd.startswith("_"):  # internal
+            continue
+        lines.append(f"• /{cmd}")
+    await update.message.reply_text(
+        "\n".join(lines), parse_mode=ParseMode.HTML, disable_web_page_preview=True
+    )
+
+
+# ───────────────────────── Build application ────────────────────
+def build_app() -> Application:
+    builder = (
+        ApplicationBuilder()
+        .token(_SETTINGS.telegram_token)
+        .rate_limiter(AIORateLimiter())
+    )
+    app = builder.build()
+
+    # GPT toggles
+    app.add_handler(CommandHandler(["gpt-on", "gpt_on"], gpt_on))
+    app.add_handler(CommandHandler(["gpt-off", "gpt_off"], gpt_off))
+    app.add_handler(CommandHandler(["gpt-global-on"], gpt_global))
+    app.add_handler(CommandHandler(["gpt-global-off"], gpt_global))
+
+    # Settings
+    app.add_handler(CommandHandler(["setmaxtokens", "set-max-tokens"], set_max_tokens))
+    app.add_handler(CommandHandler(["config", "help"], config_cmd))
+    app.add_handler(CommandHandler("diag", diag))
+
+    # Catch-all text
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+    return app
+
+
+# ───────────────────────── Entrypoint ───────────────────────────
+async def main() -> None:
+    app = build_app()
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+    await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
