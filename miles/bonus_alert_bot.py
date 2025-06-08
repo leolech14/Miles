@@ -32,19 +32,17 @@ from telegram.ext import (
 # Or, if config.py does not exist, create it with a get_settings function.
 from config import get_settings
 from miles.logging_config import setup_logging
+from miles.source_store import SourceStore
 
 
 logger = setup_logging().getChild(__name__)
 
 # ───────────────────────── Constants ────────────────────────────
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 MIN_BONUS = int(os.getenv("MIN_BONUS", "100"))  # Minimum bonus percentage to alert
 
 # ───────────────────────── Global stores ────────────────────────
-from miles.source_store import SourceStore
 STORE = SourceStore()
 
 # ───────────────────────── Redis helpers ─────────────────────────
@@ -177,7 +175,7 @@ async def config_cmd(update: Update, context: CallbackContext) -> None:
 def build_app() -> Application:
     builder = (
         ApplicationBuilder()
-        .token(_SETTINGS.telegram_token)
+        .token(_SETTINGS.telegram_bot_token)
         .rate_limiter(AIORateLimiter())
     )
     app = builder.build()
@@ -213,23 +211,24 @@ def fetch(url: str) -> str | None:
 def send_telegram(message: str, chat_id: str | None = None) -> None:
     """Send telegram message (placeholder implementation)"""
     import os
-    
+
     token = os.getenv("TELEGRAM_BOT_TOKEN", _SETTINGS.telegram_bot_token)
     if not token or token == "not_set":
         print(f"[TELEGRAM] {message}")
         return
-        
+
     target_chat = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
     if not target_chat:
         print(f"[TELEGRAM] {message}")
         return
-    
+
     try:
         import requests
+
         requests.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
             json={"chat_id": target_chat, "text": message},
-            timeout=10
+            timeout=10,
         )
     except Exception as e:
         print(f"[TELEGRAM ERROR] {e}: {message}")
@@ -240,7 +239,7 @@ def scan_programs(seen: Set[str]) -> List[Tuple[int, str, str]]:
     """Scan programs for bonuses"""
     alerts: List[Tuple[int, str, str]] = []
     sources = STORE.all() if STORE else []
-    
+
     for source_url in sources:
         try:
             content = fetch(source_url)
@@ -248,26 +247,28 @@ def scan_programs(seen: Set[str]) -> List[Tuple[int, str, str]]:
                 parse_feed(source_url, source_url, seen, alerts)
         except Exception as e:
             print(f"Error scanning {source_url}: {e}")
-    
+
     return alerts
 
 
-def parse_feed(name: str, url: str, seen: Set[str], alerts: List[Tuple[int, str, str]]) -> None:
+def parse_feed(
+    name: str, url: str, seen: Set[str], alerts: List[Tuple[int, str, str]]
+) -> None:
     """Parse feed content for bonus alerts"""
     content = fetch(url)
     if not content:
         return
-    
+
     import re
     from urllib.parse import urlparse
-    
+
     # Look for bonus percentages in content
     bonus_patterns = [
-        r'(\d+)%\s*b[oô]nus',
-        r'transferência.*?(\d+)%',
-        r'(\d+)%.*?transfer',
+        r"(\d+)%\s*b[oô]nus",
+        r"transferência.*?(\d+)%",
+        r"(\d+)%.*?transfer",
     ]
-    
+
     for pattern in bonus_patterns:
         matches = re.findall(pattern, content.lower())
         for match in matches:
@@ -288,7 +289,7 @@ async def run_scan() -> None:
     print("Running mileage program scan...")
     seen: Set[str] = set()
     alerts = scan_programs(seen)
-    
+
     if alerts:
         for bonus, source, details in alerts:
             message = f"🎯 {bonus}% bonus found on {source}: {details}"
