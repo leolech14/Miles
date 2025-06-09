@@ -24,7 +24,7 @@ jobs:
       - name: "Install Fly CLI"
         run: |
           curl -L https://fly.io/install.sh | sh
-          echo "$HOME/.fly/bin" >> $GITHUB_PATH
+          echo "$HOME/.fly/bin" >> "$GITHUB_PATH"
       - name: "Create app if needed"
         run: |
           fly apps create miles --generate-name=false || echo "App already exists"

@@ -22,7 +22,7 @@ jobs:
         run: |
           curl -s -X POST "$LOG_WEBHOOK_URL" \
                -H "Content-Type: application/json" \
-               -d "{\"run_id\":\"${{ github.run_id }}\",\"step\":\"pytest\",\"log\":\"$(cat test_output.log | jq -Rs .)\"}" || true
+               -d "{\"run_id\":\"${{ github.run_id }}\",\"step\":\"pytest\",\"log\":\"$(jq -Rs . < test_output.log)\"}" || true
         env:
           LOG_WEBHOOK_URL: ${{ secrets.LOG_WEBHOOK_URL }}
       - name: Run mypy
@@ -32,7 +32,7 @@ jobs:
         run: |
           curl -s -X POST "$LOG_WEBHOOK_URL" \
                -H "Content-Type: application/json" \
-               -d "{\"run_id\":\"${{ github.run_id }}\",\"step\":\"mypy\",\"log\":\"$(cat mypy_output.log | jq -Rs .)\"}" || true
+               -d "{\"run_id\":\"${{ github.run_id }}\",\"step\":\"mypy\",\"log\":\"$(jq -Rs . < mypy_output.log)\"}" || true
         env:
           LOG_WEBHOOK_URL: ${{ secrets.LOG_WEBHOOK_URL }}
   trivy:

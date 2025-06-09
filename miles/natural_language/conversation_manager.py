@@ -12,8 +12,7 @@ import os
 from typing import Any, cast
 
 from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletion
-from telegram import Chat, Message, Update
+from telegram import Update
 from telegram.ext import ContextTypes
 
 from miles.chat_store import ChatMemory
