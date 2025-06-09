@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - keploy-network
+
+  miles-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.keploy
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - TELEGRAM_BOT_TOKEN=test_token
+      - TELEGRAM_CHAT_ID=test_chat
+      - OPENAI_API_KEY=test_openai_key
+    networks:
+      - keploy-network
+    volumes:
+      - ./test:/app/test
+      - ./sources.yaml:/app/sources.yaml
+
+networks:
+  keploy-network:
+    driver: bridge
