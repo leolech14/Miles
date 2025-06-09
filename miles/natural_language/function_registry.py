@@ -324,7 +324,9 @@ class FunctionRegistry:
 
         return {"success": False, "error": "Source not found"}
 
-    def _discover_new_sources(self, search_terms: list[str] | None = None) -> dict[str, Any]:
+    def _discover_new_sources(
+        self, search_terms: list[str] | None = None
+    ) -> dict[str, Any]:
         """Discover new sources using AI."""
         try:
             from miles.ai_source_discovery import ai_update_sources
@@ -389,7 +391,9 @@ class FunctionRegistry:
             },
         }
 
-    def _manage_plugins(self, action: str, plugin_name: str | None = None) -> dict[str, Any]:
+    def _manage_plugins(
+        self, action: str, plugin_name: str | None = None
+    ) -> dict[str, Any]:
         """Manage plugins."""
         plugins = discover_plugins()
 
