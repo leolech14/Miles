@@ -34,9 +34,7 @@ class Promotion(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     program: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    bonus_percentage: Mapped[int] = mapped_column(
-        Integer, nullable=False, index=True
-    )
+    bonus_percentage: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     source_url: Mapped[str] = mapped_column(Text, nullable=False)
