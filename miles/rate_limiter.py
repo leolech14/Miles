@@ -8,7 +8,7 @@ from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Callable, Dict, Optional
 
 import redis
 
@@ -96,7 +96,7 @@ class RateLimiter:
 
         key = f"rate_limit:{limit_type.value}:{identifier}"
 
-        if self.redis:
+        if self.redis is not None:
             return await self._check_redis_limit(key, limit, cost)
         else:
             return await self._check_local_limit(key, limit, cost)
@@ -165,7 +165,7 @@ class RateLimiter:
                 if oldest_request:
                     retry_after = min(
                         retry_after,
-                        limit.window - (current_time - oldest_request[0][1]),
+                        int(limit.window - (current_time - oldest_request[0][1])),
                     )
 
                 return False, {
@@ -219,7 +219,7 @@ class RateLimiter:
             retry_after = limit.window
             if bucket:
                 retry_after = min(
-                    retry_after, limit.window - (current_time - bucket[0])
+                    retry_after, int(limit.window - (current_time - bucket[0]))
                 )
 
             return False, {
@@ -307,11 +307,11 @@ def get_rate_limiter() -> RateLimiter:
 
 
 # Convenience decorators
-def rate_limit(limit_type: RateLimitType, identifier_func: Optional[callable] = None):
+def rate_limit(limit_type: RateLimitType, identifier_func: Optional[Callable] = None):
     """Decorator for rate limiting functions."""
 
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
+    def decorator(func: Callable) -> Callable:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             identifier = "global"
             if identifier_func:
                 identifier = identifier_func(*args, **kwargs)
@@ -325,7 +325,7 @@ def rate_limit(limit_type: RateLimitType, identifier_func: Optional[callable] = 
     return decorator
 
 
-def get_user_id_from_update(update, *args, **kwargs) -> str:
+def get_user_id_from_update(update: Any, *args: Any, **kwargs: Any) -> str:
     """Helper to extract user ID from Telegram update."""
     if hasattr(update, "effective_user") and update.effective_user:
         return str(update.effective_user.id)

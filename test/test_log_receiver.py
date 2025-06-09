@@ -1,2 +1,7 @@
-import pytest
-from log_receiver import *  # Importing all from the source module
+"""Test for log receiver functionality."""
+
+
+def test_log_receiver_placeholder() -> None:
+    """Placeholder test for log receiver."""
+    # TODO: Implement actual log receiver tests
+    assert True

@@ -46,7 +46,7 @@ STORE = SourceStore()
 
 # ───────────────────────── Redis helpers ─────────────────────────
 _SETTINGS = get_settings()
-_R: Final = redis.from_url(_SETTINGS.redis_url, decode_responses=True)  # type: ignore[no-untyped-call]
+_R: Final = redis.from_url(_SETTINGS.redis_url, decode_responses=True)
 
 KEY_GPT_CHAT = "miles:gpt_mode:{chat_id}"  # per-chat toggle
 KEY_GPT_GLOBAL = "miles:gpt_mode:global"  # global toggle (0 / 1)

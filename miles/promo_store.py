@@ -22,9 +22,9 @@ class PromoStore:
 
     def __init__(self) -> None:
         settings = get_settings()
-        self._redis: Optional[redis.Redis] = None
+        self._redis: Optional[redis.Redis[str]] = None
         try:
-            self._redis = redis.from_url(settings.redis_url, decode_responses=True)  # type: ignore[no-untyped-call]
+            self._redis = redis.from_url(settings.redis_url, decode_responses=True)
             self._redis.ping()  # Test connection
             self._use_redis = True
         except Exception:
