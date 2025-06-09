@@ -64,11 +64,11 @@ def test_metrics_context_managers():
     from miles.metrics import time_operation, count_operation, Histogram, Counter
     
     # Create test metrics
-    test_histogram = Histogram("test_duration", "Test histogram")
+    test_histogram = Histogram("test_duration_seconds", "Test histogram", ["operation"])
     test_counter = Counter("test_total", "Test counter", ["status"])
     
     # Test timing context manager
-    with time_operation(test_histogram):
+    with time_operation(test_histogram, "test_op"):
         time.sleep(0.01)  # Small delay
     
     # Verify timing was recorded

@@ -114,23 +114,39 @@ store = SourceStore()
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Run the scan and reply with any found promotions."""
     from miles.metrics import telegram_commands_total, promos_found_total
+    from miles.rate_limiter import get_rate_limiter, RateLimitType, RateLimitExceeded
     
     try:
         if not update.message or not update.effective_chat:
             return
-        await update.message.reply_text("🔍 Scanning for promotions ≥80%...")
-        seen: set[str] = set()
-        alerts = bot.scan_programs(seen)
+            
+        # Apply rate limiting
+        user_id = str(update.effective_user.id) if update.effective_user else "anonymous"
+        limiter = get_rate_limiter()
         
-        # Record metrics
-        promos_found_total.labels("manual_scan", "telegram", "all").inc(len(alerts))
+        try:
+            async with limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id):
+                async with limiter.limit(RateLimitType.SOURCE_SCAN, user_id, cost=3):  # Manual scan is expensive
+                    await update.message.reply_text("🔍 Scanning for promotions ≥80%...")
+                    seen: set[str] = set()
+                    alerts = bot.scan_programs(seen)
+                    
+                    # Record metrics
+                    promos_found_total.labels("manual_scan", "telegram", "all").inc(len(alerts))
+                    
+                    if not alerts:
+                        await update.message.reply_text("✅ Scan complete. No new promotions found.")
+                    else:
+                        await update.message.reply_text(
+                            f"✅ Scan complete. Found {len(alerts)} promotions!"
+                        )
         
-        if not alerts:
-            await update.message.reply_text("✅ Scan complete. No new promotions found.")
-        else:
+        except RateLimitExceeded as e:
             await update.message.reply_text(
-                f"✅ Scan complete. Found {len(alerts)} promotions!"
+                f"⏱️ Rate limit exceeded. Please wait {e.retry_after} seconds before trying again."
             )
+            telegram_commands_total.labels("ask", "rate_limited").inc()
+            return
         
         telegram_commands_total.labels("ask", "success").inc()
     except Exception as e:
@@ -227,6 +243,8 @@ async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    from miles.rate_limiter import get_rate_limiter, RateLimitType, RateLimitExceeded
+    
     # Check if OpenAI is available
     if not openai_client:
         if not update.message:
@@ -239,58 +257,68 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.message.text or not update.effective_user:
         return
     
-    text = update.message.text
-    parts = text.split(maxsplit=1)
-    if len(parts) < 2:
-        await update.message.reply_text("Usage: /chat <message>")
-        return
-
-    user_id = update.effective_user.id
-    user_msgs = memory.get(user_id)
-
-    # Add system prompt for bot configuration
-    if not user_msgs:
-        system_prompt = {
-            "role": "system",
-            "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can help users configure bot settings, understand commands, and provide general assistance. When users ask about bot configuration, provide helpful guidance.",
-        }
-        user_msgs.append(system_prompt)
-
-    user_msgs.append({"role": "user", "content": parts[1]})
-
+    # Apply rate limiting for chat commands
+    user_id = str(update.effective_user.id)
+    limiter = get_rate_limiter()
+    
     try:
-        # Get user preferences for model and temperature
-        model = memory.get_user_preference(user_id, "model") or os.getenv(
-            "OPENAI_MODEL", "gpt-4o-mini"
+        async with limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id):
+            async with limiter.limit(RateLimitType.OPENAI_REQUEST, user_id, cost=2):  # AI requests are expensive
+                text = update.message.text
+                parts = text.split(maxsplit=1)
+                if len(parts) < 2:
+                    await update.message.reply_text("Usage: /chat <message>")
+                    return
+
+                user_msgs = memory.get(int(user_id))
+
+                # Add system prompt for bot configuration
+                if not user_msgs:
+                    system_prompt = {
+                        "role": "system",
+                        "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can help users configure bot settings, understand commands, and provide general assistance. When users ask about bot configuration, provide helpful guidance.",
+                    }
+                    user_msgs.append(system_prompt)
+
+                user_msgs.append({"role": "user", "content": parts[1]})
+
+                # Get user preferences for model and temperature
+                model = memory.get_user_preference(int(user_id), "model") or os.getenv(
+                    "OPENAI_MODEL", "gpt-4o-mini"
+                )
+                temperature = float(memory.get_user_preference(int(user_id), "temperature") or "0.7")
+                max_tokens = int(memory.get_user_preference(int(user_id), "max_tokens") or "1000")
+
+                resp = await asyncio.to_thread(
+                    openai_client.chat.completions.create,
+                    model=model,
+                    messages=user_msgs[-20:],
+                    stream=False,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+
+                if not resp.choices or not resp.choices[0].message:
+                    await update.message.reply_text("❌ Invalid response from OpenAI API.")
+                    return
+
+                reply = resp.choices[0].message.content
+                if not reply:
+                    await update.message.reply_text("❌ Empty response from OpenAI API.")
+                    return
+
+                user_msgs.append({"role": "assistant", "content": reply})
+                memory.save(int(user_id), user_msgs[-20:])
+                await update.message.reply_text(reply)
+
+    except RateLimitExceeded as e:
+        await update.message.reply_text(
+            f"⏱️ Chat rate limit exceeded. Please wait {e.retry_after} seconds before trying again."
         )
-        temperature = float(memory.get_user_preference(user_id, "temperature") or "0.7")
-        max_tokens = int(memory.get_user_preference(user_id, "max_tokens") or "1000")
-
-        resp = await asyncio.to_thread(
-            openai_client.chat.completions.create,
-            model=model,
-            messages=user_msgs[-20:],
-            stream=False,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-
-        if not resp.choices or not resp.choices[0].message:
-            await update.message.reply_text("❌ Invalid response from OpenAI API.")
-            return
-
-        reply = resp.choices[0].message.content
-        if not reply:
-            await update.message.reply_text("❌ Empty response from OpenAI API.")
-            return
-
+        return
     except Exception as e:
         await update.message.reply_text(f"❌ OpenAI API error: {str(e)}")
         return
-
-    user_msgs.append({"role": "assistant", "content": reply})
-    memory.save(user_id, user_msgs[-20:])
-    await update.message.reply_text(reply)
 
 
 async def handle_end(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -718,6 +746,47 @@ async def handle_debug(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(status_msg, parse_mode="Markdown")
 
 
+async def handle_rate_limit_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show current rate limit status for the user."""
+    if not update.message or not update.effective_user:
+        return
+    
+    from miles.rate_limiter import get_rate_limiter, RateLimitType
+    
+    user_id = str(update.effective_user.id)
+    limiter = get_rate_limiter()
+    
+    status_msg = "⏱️ **Rate Limit Status**\n\n"
+    
+    # Check different rate limit types
+    rate_limit_types = [
+        (RateLimitType.TELEGRAM_COMMAND, "Telegram Commands"),
+        (RateLimitType.OPENAI_REQUEST, "AI Chat Requests"),
+        (RateLimitType.SOURCE_SCAN, "Source Scanning"),
+        (RateLimitType.USER_OPERATION, "General Operations"),
+    ]
+    
+    for limit_type, display_name in rate_limit_types:
+        try:
+            stats = await limiter.get_stats(limit_type, user_id)
+            if "error" not in stats:
+                remaining = stats.get("remaining", "Unknown")
+                window = stats.get("window_seconds", "Unknown")
+                burst = stats.get("burst_capacity", "Unknown")
+                
+                status_icon = "✅" if stats.get("currently_allowed", True) else "⚠️"
+                status_msg += f"{status_icon} **{display_name}**\n"
+                status_msg += f"  • Remaining: {remaining}\n"
+                status_msg += f"  • Window: {window}s\n"
+                status_msg += f"  • Burst: {burst}\n\n"
+        except Exception as e:
+            status_msg += f"❌ **{display_name}**: Error - {str(e)}\n\n"
+    
+    status_msg += "💡 *Rate limits prevent spam and ensure fair usage*"
+    
+    await update.message.reply_text(status_msg, parse_mode="Markdown")
+
+
 async def handle_ai_brain(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """AI Brain command - let AI control the bot intelligently"""
     if not openai_client:
@@ -956,6 +1025,7 @@ def main() -> None:
 
         # Debug and AI Brain commands
         app.add_handler(CommandHandler("debug", handle_debug))
+        app.add_handler(CommandHandler("ratelimit", handle_rate_limit_status))
         app.add_handler(CommandHandler("brain", handle_ai_brain))
 
         print("[ask_bot] Starting Telegram bot polling...")
