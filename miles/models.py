@@ -88,7 +88,7 @@ class Source(Base):
     quality_score: Mapped[float] = mapped_column(Numeric(3, 2), default=5.0, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     check_frequency_minutes: Mapped[int] = mapped_column(Integer, default=60)
-    plugin_config: Mapped[Optional[dict]] = mapped_column(JSON)
+    plugin_config: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
     last_error_message: Mapped[Optional[str]] = mapped_column(Text)
     consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -121,7 +121,7 @@ class User(Base):
 
     # Settings
     ai_chat_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    notification_preferences: Mapped[dict] = mapped_column(
+    notification_preferences: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         default={
             "instant": True,
@@ -262,7 +262,7 @@ class BonusPrediction(Base):
 
     # Model information
     model_version: Mapped[Optional[str]] = mapped_column(String(20))
-    model_features: Mapped[Optional[dict]] = mapped_column(JSON)
+    model_features: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
 
     # Verification
     created_at: Mapped[datetime] = mapped_column(
