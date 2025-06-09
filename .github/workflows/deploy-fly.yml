@@ -2,7 +2,7 @@ name: deploy-fly
 
 on:
   workflow_run:
-    workflows: ["build"]
+    workflows: ["🛡️ Build & Quality Gates"]
     types:
       - completed
   workflow_dispatch:
