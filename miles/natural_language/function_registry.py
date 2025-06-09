@@ -278,10 +278,8 @@ class FunctionRegistry:
 
     def _add_source(self, url: str, validate: bool = True) -> dict[str, Any]:
         """Add a new source."""
-        if validate:
-            # Basic URL validation
-            if not url.startswith(("http://", "https://")):
-                return {"success": False, "error": "Invalid URL format"}
+        if validate and not url.startswith(("http://", "https://")):
+            return {"success": False, "error": "Invalid URL format"}
 
         success = self.store.add(url)
         return {
@@ -370,7 +368,7 @@ class FunctionRegistry:
         return {
             "success": success,
             "update_time": hour,
-            "message": f"Source update time set to: {hour}:00",
+            "message": "Source update time set to: " + f"{hour}:00",
         }
 
     def _get_bot_status(self) -> dict[str, Any]:

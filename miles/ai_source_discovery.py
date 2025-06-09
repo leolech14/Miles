@@ -144,7 +144,7 @@ Return only the search queries, one per line.""",
                             uddg = parse_qs(parsed.query).get("uddg", [])
                             if uddg:
                                 href = unquote(uddg[0])
-                        except Exception:
+                        except Exception:  # Expected - malformed URLs
                             continue
 
                     # Extract domain

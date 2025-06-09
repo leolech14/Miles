@@ -13,7 +13,7 @@ import duckdb
 def test_postgresql_connection() -> None:
     """Test PostgreSQL connection via Docker."""
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # Docker command execution
             [
                 "docker",
                 "exec",
@@ -53,7 +53,7 @@ def test_sqlite_connection() -> None:
         assert result[0] == "SQLite Connected"
     except Exception as e:
         print(f"❌ SQLite test failed: {e!s}")
-        assert False, f"SQLite connection failed: {e}"
+        raise AssertionError(f"SQLite connection failed: {e}") from e
 
 
 def test_duckdb_connection() -> None:
@@ -66,13 +66,13 @@ def test_duckdb_connection() -> None:
         assert result[0] == "DuckDB Connected"
     except Exception as e:
         print(f"❌ DuckDB test failed: {e!s}")
-        assert False, f"DuckDB connection failed: {e}"
+        raise AssertionError(f"DuckDB connection failed: {e}") from e
 
 
 def test_playwright_mcp() -> None:
     """Test Playwright MCP server."""
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # NPX command execution
             ["npx", "-y", "@playwright/mcp", "--help"],
             capture_output=True,
             text=True,
@@ -96,7 +96,7 @@ def test_postgres_mcp() -> None:
     """Test PostgreSQL MCP server."""
     try:
         # Just test if the package is available
-        result = subprocess.run(
+        result = subprocess.run(  # NPX command execution
             ["npx", "-y", "@modelcontextprotocol/server-postgres", "--help"],
             capture_output=True,
             text=True,

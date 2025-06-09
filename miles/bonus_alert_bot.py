@@ -48,12 +48,12 @@ STORE = SourceStore()
 _SETTINGS = get_settings()
 
 
-def _get_redis() -> redis.Redis | None:
+def _get_redis() -> redis.Redis[str] | None:
     """Get Redis client if available."""
     try:
         if _SETTINGS.redis_url and _SETTINGS.redis_url != "not_set":
             return redis.from_url(_SETTINGS.redis_url, decode_responses=True)
-    except Exception:
+    except Exception:  # Expected - Redis may not be available
         pass
     return None
 
@@ -287,7 +287,7 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 <b>📖 What is Miles Bot?</b>
 Advanced Brazilian mileage program monitor that:
-• 🔍 Scans 50+ sources for transfer bonus promotions  
+• 🔍 Scans 50+ sources for transfer bonus promotions
 • 🧠 Uses AI to discover new sources automatically
 • 🔌 Modular plugin system for extensible functionality
 • 📱 Real-time Telegram notifications
@@ -295,7 +295,7 @@ Advanced Brazilian mileage program monitor that:
 
 <b>📚 Help Sections:</b>
 /help ai - 🤖 AI Features & ChatGPT
-/help config - 🔧 Configuration & Settings  
+/help config - 🔧 Configuration & Settings
 /help sources - 📊 Source Management
 /help plugins - 🔌 Plugin System
 /help brain - ⚡ AI Brain Control
@@ -350,7 +350,7 @@ Example: "How do I add a new mileage source?"
 
 <b>🤖 GPT Controls:</b>
 /gpt-on - Enable AI for this chat
-/gpt-off - Disable AI for this chat  
+/gpt-off - Disable AI for this chat
 /gpt-global-on - Enable AI globally
 /gpt-global-off - Disable AI globally
 
@@ -393,13 +393,13 @@ Example: "How do I add a new mileage source?"
 
 <b>📈 Source Quality:</b>
 • Reliability scoring
-• Content freshness analysis  
+• Content freshness analysis
 • Bonus detection accuracy
 • Historical performance tracking
 
 <b>🎯 Supported Sites:</b>
 • Melhores Destinos
-• Passageiro de Primeira  
+• Passageiro de Primeira
 • Pontos pra Voar
 • Mestre das Milhas
 • Guia do Milheiro
@@ -430,7 +430,7 @@ Miles uses a modular plugin system where:
 
 <b>🛠️ Developer Info:</b>
 • Protocol-based plugin contracts
-• Entry point discovery mechanism  
+• Entry point discovery mechanism
 • APScheduler integration
 • Environment variable controls
 
@@ -453,7 +453,7 @@ Advanced AI system that can autonomously:
 
 <b>🎮 Brain Commands:</b>
 /brain analyze - AI analyzes bot performance
-/brain discover - Find new mileage sources  
+/brain discover - Find new mileage sources
 /brain scan - Run and analyze scans
 /brain optimize - Optimize bot settings
 /brain <question> - Ask AI to control anything
@@ -466,7 +466,7 @@ Advanced AI system that can autonomously:
 
 <b>💡 Example Usage:</b>
 • "Brain, find sources with 100%+ bonuses"
-• "Analyze which sources perform best"  
+• "Analyze which sources perform best"
 • "Optimize scan frequency for better results"
 • "What's the best time to scan for bonuses?"
 
@@ -488,7 +488,7 @@ Advanced AI system that can autonomously:
 
 <b>💾 Data Management:</b>
 • Redis for fast caching
-• SQLite for persistence  
+• SQLite for persistence
 • YAML for configuration
 • JSON for structured data
 
@@ -603,7 +603,7 @@ async def plugins_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 <b>📋 Available commands:</b>
 • <code>/plugins</code> - List all plugins
-• <code>/plugins list</code> - Same as above  
+• <code>/plugins list</code> - Same as above
 • <code>/plugins status</code> - Plugin status
 • <code>/plugins test &lt;name&gt;</code> - Test specific plugin
 • <code>/plugins info &lt;name&gt;</code> - Plugin information
@@ -696,7 +696,7 @@ def send_telegram(message: str, chat_id: str | None = None) -> None:
     import os
 
     token = os.getenv("TELEGRAM_BOT_TOKEN", _SETTINGS.telegram_bot_token)
-    if not token or token == "not_set":
+    if not token or token == "not_set":  # Expected test value
         print(f"[TELEGRAM] {message}")
         return
 

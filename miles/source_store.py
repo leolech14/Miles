@@ -59,9 +59,11 @@ class SourceStore:
                 time_operation,
             )
 
-            with time_operation(redis_response_duration, "smembers"):
-                with count_operation(redis_operations_total, "smembers"):
-                    sources = self.r.smembers("sources")
+            with (
+                time_operation(redis_response_duration, "smembers"),
+                count_operation(redis_operations_total, "smembers"),
+            ):
+                sources = self.r.smembers("sources")
         except ImportError:
             # Metrics not available, run without instrumentation
             sources = self.r.smembers("sources")

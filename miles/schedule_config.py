@@ -18,7 +18,7 @@ class ScheduleConfig:
                 redis_client = redis.Redis.from_url(url, decode_responses=True)
                 redis_client.ping()
                 self.r = redis_client
-            except Exception:
+            except Exception:  # Expected - Redis may not be available
                 pass
 
     def _key(self) -> str:
@@ -58,7 +58,7 @@ class ScheduleConfig:
             return False
 
         config = self.get_config()
-        config["scan_hours"] = sorted(list(set(hours)))  # Remove duplicates and sort
+        config["scan_hours"] = sorted(set(hours))  # Remove duplicates and sort
         return self._save_config(config)
 
     def _save_config(self, config: dict[str, Any]) -> bool:

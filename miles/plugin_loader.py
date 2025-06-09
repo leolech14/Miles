@@ -88,15 +88,12 @@ def _cron_kwargs(expr: str) -> dict[str, Any]:
     if expr.startswith("@"):
         # Handle aliases like @hourly, @daily, etc.
         alias = expr.lstrip("@")
-        if alias == "hourly":
-            return {"minute": "0"}
-        elif alias == "daily":
-            return {"hour": "0", "minute": "0"}
-        elif alias == "weekly":
-            return {"day_of_week": "0", "hour": "0", "minute": "0"}
-        else:
-            # Fallback for unknown aliases
-            return {"hour": "*/1"}
+        alias_map = {
+            "hourly": {"minute": "0"},
+            "daily": {"hour": "0", "minute": "0"},
+            "weekly": {"day_of_week": "0", "hour": "0", "minute": "0"},
+        }
+        return alias_map.get(alias, {"hour": "*/1"})
 
     # Parse standard cron format: "min hour day month dow"
     parts = expr.split()

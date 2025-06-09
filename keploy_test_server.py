@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 # Setup environment variables at startup
 if "TELEGRAM_BOT_TOKEN" not in os.environ:
-    os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"
+    os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"  # Test environment only
 if "TELEGRAM_CHAT_ID" not in os.environ:
     os.environ["TELEGRAM_CHAT_ID"] = "test_chat"
 if "OPENAI_API_KEY" not in os.environ:
@@ -68,7 +68,7 @@ async def get_sources() -> SourceResponse:
         sources = store.all()
         return SourceResponse(sources=sources, count=len(sources))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/sources")
@@ -83,7 +83,7 @@ async def add_source(request: SourceRequest) -> dict[str, Any]:
             "status": "success" if added else "already_exists",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/scan")
@@ -113,7 +113,7 @@ async def manual_scan(request: ScanRequest) -> ScanResponse:
             alerts=alerts_dict, count=len(alerts_dict), status="success"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/plugins")
@@ -132,7 +132,7 @@ async def get_plugins() -> dict[str, Any]:
 
         return {"plugins": plugin_info, "count": len(plugin_info), "status": "success"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/metrics")
@@ -153,7 +153,7 @@ async def get_metrics() -> dict[str, Any]:
             "status": "healthy",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/test-notification")
@@ -177,7 +177,7 @@ async def test_notification() -> dict[str, Any]:
             "status": "success",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":

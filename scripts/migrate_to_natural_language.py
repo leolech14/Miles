@@ -113,7 +113,7 @@ def show_migration_comparison():
     print(
         """
     📊 MIGRATION COMPARISON:
-    
+
     ╔═══════════════════════════════════════════════════════════════╗
     ║                    BEFORE (Commands)                          ║
     ╠═══════════════════════════════════════════════════════════════╣
@@ -124,7 +124,7 @@ def show_migration_comparison():
     ║ Bot:  1. https://site1.com                                   ║
     ║       2. https://site2.com                                   ║
     ╚═══════════════════════════════════════════════════════════════╝
-    
+
     ╔═══════════════════════════════════════════════════════════════╗
     ║                  AFTER (Natural Language)                    ║
     ╠═══════════════════════════════════════════════════════════════╣
@@ -153,27 +153,27 @@ def show_example_conversations():
     print(
         """
     💬 EXAMPLE CONVERSATIONS:
-    
+
     🎯 Finding Bonuses:
     "What's the best transfer bonus available right now?"
     "Check for any Livelo promotions"
     "Are there bonuses above 100% today?"
-    
+
     📊 Managing Sources:
     "Add this site to monitor: https://newsite.com"
     "Remove the third source from my list"
     "Show me all websites you're monitoring"
-    
+
     ⏰ Scheduling:
     "Check for bonuses every 4 hours"
     "Set up scanning at 8 AM and 8 PM"
     "When do you usually find the best promotions?"
-    
+
     🔧 Configuration:
     "How is the bot performing?"
     "Optimize my settings for better results"
     "Show me the current configuration"
-    
+
     🧠 AI Features:
     "Find new mileage websites for me"
     "Analyze my source performance"
@@ -242,20 +242,20 @@ def show_deployment_instructions():
     print(
         """
     🚀 DEPLOYMENT INSTRUCTIONS:
-    
+
     📦 Local Development:
     1. pip install -e .[dev]
     2. cp .env.natural .env  # Edit with your values
     3. python natural_language_bot.py
-    
+
     🐳 Docker (Recommended):
     1. docker-compose -f docker-compose.natural.yml up -d
-    
+
     ☁️ Fly.io Production:
     1. Create fly.toml with natural language config
     2. fly secrets set OPENAI_API_KEY=sk-proj-...
     3. fly deploy --dockerfile Dockerfile.natural
-    
+
     📊 With Monitoring:
     1. docker-compose -f docker-compose.natural.yml up -d
     2. Access Grafana at http://localhost:3000
@@ -298,15 +298,15 @@ def main():
     print(
         """
     ✅ MIGRATION READY!
-    
+
     Your bot is ready to use natural language! Key benefits:
-    
+
     🎯 Intuitive: Users chat naturally instead of learning commands
     🧠 Intelligent: AI understands context and intent
     🔧 Powerful: All original features available through conversation
     🖼️ Multimodal: Users can send images for analysis
     🚀 Proactive: AI suggests optimizations and improvements
-    
+
     Start the bot with: python natural_language_bot.py
     """
     )

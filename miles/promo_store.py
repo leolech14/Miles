@@ -59,7 +59,7 @@ class PromoStore:
         }
 
         key_str = json.dumps(key_data, sort_keys=True)
-        return hashlib.md5(key_str.encode()).hexdigest()
+        return hashlib.md5(key_str.encode()).hexdigest()  # MD5 safe for deduplication
 
     def _is_seen(self, promo_hash: str) -> bool:
         """True if promo_id is already persisted."""

@@ -126,29 +126,27 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         limiter = get_rate_limiter()
 
         try:
-            async with limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id):
-                async with limiter.limit(
-                    RateLimitType.SOURCE_SCAN, user_id, cost=3
-                ):  # Manual scan is expensive
+            async with (
+                limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id),
+                limiter.limit(RateLimitType.SOURCE_SCAN, user_id, cost=3),
+            ):  # Manual scan is expensive
+                await update.message.reply_text("🔍 Scanning for promotions ≥80%...")
+                seen: set[str] = set()
+                alerts = bot.scan_programs(seen)
+
+                # Record metrics
+                promos_found_total.labels("manual_scan", "telegram", "all").inc(
+                    len(alerts)
+                )
+
+                if not alerts:
                     await update.message.reply_text(
-                        "🔍 Scanning for promotions ≥80%..."
+                        "✅ Scan complete. No new promotions found."
                     )
-                    seen: set[str] = set()
-                    alerts = bot.scan_programs(seen)
-
-                    # Record metrics
-                    promos_found_total.labels("manual_scan", "telegram", "all").inc(
-                        len(alerts)
+                else:
+                    await update.message.reply_text(
+                        f"✅ Scan complete. Found {len(alerts)} promotions!"
                     )
-
-                    if not alerts:
-                        await update.message.reply_text(
-                            "✅ Scan complete. No new promotions found."
-                        )
-                    else:
-                        await update.message.reply_text(
-                            f"✅ Scan complete. Found {len(alerts)} promotions!"
-                        )
 
         except RateLimitExceeded as e:
             await update.message.reply_text(
@@ -271,64 +269,60 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     limiter = get_rate_limiter()
 
     try:
-        async with limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id):
-            async with limiter.limit(
-                RateLimitType.OPENAI_REQUEST, user_id, cost=2
-            ):  # AI requests are expensive
-                text = update.message.text
-                parts = text.split(maxsplit=1)
-                if len(parts) < 2:
-                    await update.message.reply_text("Usage: /chat <message>")
-                    return
+        async with (
+            limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id),
+            limiter.limit(RateLimitType.OPENAI_REQUEST, user_id, cost=2),
+        ):  # AI requests are expensive
+            text = update.message.text
+            parts = text.split(maxsplit=1)
+            if len(parts) < 2:
+                await update.message.reply_text("Usage: /chat <message>")
+                return
 
-                user_msgs = memory.get(int(user_id))
+            user_msgs = memory.get(int(user_id))
 
-                # Add system prompt for bot configuration
-                if not user_msgs:
-                    system_prompt = {
-                        "role": "system",
-                        "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can help users configure bot settings, understand commands, and provide general assistance. When users ask about bot configuration, provide helpful guidance.",
-                    }
-                    user_msgs.append(system_prompt)
+            # Add system prompt for bot configuration
+            if not user_msgs:
+                system_prompt = {
+                    "role": "system",
+                    "content": "You are an AI assistant helping to configure a Miles telegram bot that monitors Brazilian mileage program promotions. You can help users configure bot settings, understand commands, and provide general assistance. When users ask about bot configuration, provide helpful guidance.",
+                }
+                user_msgs.append(system_prompt)
 
-                user_msgs.append({"role": "user", "content": parts[1]})
+            user_msgs.append({"role": "user", "content": parts[1]})
 
-                # Get user preferences for model and temperature
-                model = memory.get_user_preference(int(user_id), "model") or os.getenv(
-                    "OPENAI_MODEL", "gpt-4o-mini"
-                )
-                temperature = float(
-                    memory.get_user_preference(int(user_id), "temperature") or "0.7"
-                )
-                max_tokens = int(
-                    memory.get_user_preference(int(user_id), "max_tokens") or "1000"
-                )
+            # Get user preferences for model and temperature
+            model = memory.get_user_preference(int(user_id), "model") or os.getenv(
+                "OPENAI_MODEL", "gpt-4o-mini"
+            )
+            temperature = float(
+                memory.get_user_preference(int(user_id), "temperature") or "0.7"
+            )
+            max_tokens = int(
+                memory.get_user_preference(int(user_id), "max_tokens") or "1000"
+            )
 
-                resp = await asyncio.to_thread(
-                    openai_client.chat.completions.create,
-                    model=model,
-                    messages=user_msgs[-20:],
-                    stream=False,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
+            resp = await asyncio.to_thread(
+                openai_client.chat.completions.create,
+                model=model,
+                messages=user_msgs[-20:],
+                stream=False,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
 
-                if not resp.choices or not resp.choices[0].message:
-                    await update.message.reply_text(
-                        "❌ Invalid response from OpenAI API."
-                    )
-                    return
+            if not resp.choices or not resp.choices[0].message:
+                await update.message.reply_text("❌ Invalid response from OpenAI API.")
+                return
 
-                reply = resp.choices[0].message.content
-                if not reply:
-                    await update.message.reply_text(
-                        "❌ Empty response from OpenAI API."
-                    )
-                    return
+            reply = resp.choices[0].message.content
+            if not reply:
+                await update.message.reply_text("❌ Empty response from OpenAI API.")
+                return
 
-                user_msgs.append({"role": "assistant", "content": reply})
-                memory.save(int(user_id), user_msgs[-20:])
-                await update.message.reply_text(reply)
+            user_msgs.append({"role": "assistant", "content": reply})
+            memory.save(int(user_id), user_msgs[-20:])
+            await update.message.reply_text(reply)
 
     except RateLimitExceeded as e:
         await update.message.reply_text(
@@ -358,46 +352,41 @@ async def handle_config(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     current_temp = prefs.get("temperature", "0.7")
     current_max_tokens = prefs.get("max_tokens", "1000")
 
-    msg = f"""🤖 **Current Configuration**
-
-**OpenAI Settings:**
-• Model: `{current_model}`
-• Temperature: `{current_temp}`
-• Max Tokens: `{current_max_tokens}`
-
-**Available Commands:**
-• `/ask` - Run manual promotion scan
-• `/sources` - List current sources  
-• `/addsrc <url>` - Add new source URL
-• `/rmsrc <id_or_url>` - Remove source by index or URL
-• `/update` - AI-powered search for new sources
-• `/chat <text>` - Talk with integrated AI assistant
-• `/end` - Clear chat context
-• `/config` - Show current configuration
-
-**AI Configuration:**
-• `/setmodel <model>` - Change AI model
-• `/settemp <0.0-2.0>` - Set temperature (0.0-2.0)
-• `/setmaxtokens <100-4096>` - Set max response tokens
-
-**Source Management:**  
-• `/import <urls>` - Import sources from URLs in text
-• `/export` - Export all sources as text
-
-**Scheduling:**
-• `/schedule` - View current scan/update schedule
-• `/setscantime <hours>` - Set promotion scan times (e.g., 8,20)
-• `/setupdatetime <hour>` - Set source update time (e.g., 7)
-
-**Advanced:**
-• `/brain <command>` - Let AI control and optimize the bot
-• `/debug` - Show bot status and diagnostics
-
-**Available Models:**
-• gpt-4o-mini (fastest, cheapest)
-• gpt-4o (most capable)
-• gpt-4-turbo
-• gpt-3.5-turbo"""
+    msg = (
+        "🤖 **Current Configuration**\n\n"
+        "**OpenAI Settings:**\n"
+        f"• Model: `{current_model}`\n"
+        f"• Temperature: `{current_temp}`\n"
+        f"• Max Tokens: `{current_max_tokens}`\n\n"
+        "**Available Commands:**\n"
+        "• `/ask` - Run manual promotion scan\n"
+        "• `/sources` - List current sources\n"
+        "• `/addsrc <url>` - Add new source URL\n"
+        "• `/rmsrc <id_or_url>` - Remove source by index or URL\n"
+        "• `/update` - AI-powered search for new sources\n"
+        "• `/chat <text>` - Talk with integrated AI assistant\n"
+        "• `/end` - Clear chat context\n"
+        "• `/config` - Show current configuration\n\n"
+        "**AI Configuration:**\n"
+        "• `/setmodel <model>` - Change AI model\n"
+        "• `/settemp <0.0-2.0>` - Set temperature (0.0-2.0)\n"
+        "• `/setmaxtokens <100-4096>` - Set max response tokens\n\n"
+        "**Source Management:**\n"
+        "• `/import <urls>` - Import sources from URLs in text\n"
+        "• `/export` - Export all sources as text\n\n"
+        "**Scheduling:**\n"
+        "• `/schedule` - View current scan/update schedule\n"
+        "• `/setscantime <hours>` - Set promotion scan times (e.g., 8,20)\n"
+        "• `/setupdatetime <hour>` - Set source update time (e.g., 7)\n\n"
+        "**Advanced:**\n"
+        "• `/brain <command>` - Let AI control and optimize the bot\n"
+        "• `/debug` - Show bot status and diagnostics\n\n"
+        "**Available Models:**\n"
+        "• gpt-4o-mini (fastest, cheapest)\n"
+        "• gpt-4o (most capable)\n"
+        "• gpt-4-turbo\n"
+        "• gpt-3.5-turbo"
+    )
 
     await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -632,7 +621,7 @@ async def handle_setupdatetime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -
         if schedule_config.set_update_time(hour):
             if update_schedule():
                 await update.message.reply_text(
-                    f"✅ Source update time set to: {hour}:00"
+                    "✅ Source update time set to: " + f"{hour}:00"
                 )
             else:
                 await update.message.reply_text("❌ Failed to update scheduler")
@@ -985,7 +974,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 
 def start_health_server() -> None:
-    server = HTTPServer(("0.0.0.0", 8080), HealthHandler)
+    server = HTTPServer(("127.0.0.1", 8080), HealthHandler)  # Bind to localhost only
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
 

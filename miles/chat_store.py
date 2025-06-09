@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import sys
@@ -81,10 +82,8 @@ class ChatMemory:
             # Clear from file storage
             chat_file = self.chat_dir / f"{user_id}.json"
             if chat_file.exists():
-                try:
+                with contextlib.suppress(OSError):
                     chat_file.unlink()
-                except OSError:
-                    pass  # Silent fail for file deletion issues
 
     def _pref_key(self, user_id: int) -> str:
         return f"prefs:{user_id}"

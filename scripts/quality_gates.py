@@ -55,7 +55,9 @@ def run_command(
 
     start_time = time.time()
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False
+        )  # User command execution
         duration = time.time() - start_time
 
         if result.returncode == 0:
@@ -221,7 +223,9 @@ def check_dependencies() -> bool:
     missing_tools = []
     for tool, description in required_tools:
         try:
-            subprocess.run([tool, "--version"], capture_output=True, check=True)
+            subprocess.run(
+                [tool, "--version"], capture_output=True, check=True
+            )  # Tool availability check
             print(f"{Colors.GREEN}✅ {description}{Colors.END}")
         except (subprocess.CalledProcessError, FileNotFoundError):
             print(f"{Colors.RED}❌ {description} not found{Colors.END}")

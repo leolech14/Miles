@@ -41,7 +41,7 @@ def setup_scheduler() -> None:
         id="ai_update_sources",
     )
 
-    # Main scan jobs – possibly multiple hours per day
+    # Main scan jobs - possibly multiple hours per day
     for hour in cfg["scan_hours"]:
         _scheduler.add_job(run_scan, "cron", hour=hour, minute=0, id=f"scan_{hour}")
 

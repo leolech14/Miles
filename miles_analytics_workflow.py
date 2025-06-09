@@ -19,13 +19,13 @@ def export_data_to_csv() -> str:
     # Export bot usage analytics
     df_usage = conn.execute(
         """
-        SELECT 
+        SELECT
             DATE(timestamp) as date,
             command,
             COUNT(*) as usage_count,
             AVG(response_time_sec) as avg_response_time,
             SUM(CASE WHEN success THEN 1 ELSE 0 END) as success_count
-        FROM bot_usage 
+        FROM bot_usage
         GROUP BY DATE(timestamp), command
         ORDER BY date DESC, usage_count DESC
     """
@@ -34,7 +34,7 @@ def export_data_to_csv() -> str:
     # Export promotion analytics
     df_promos = conn.execute(
         """
-        SELECT 
+        SELECT
             DATE(date_found) as date,
             program,
             source,
@@ -71,12 +71,12 @@ def analyze_performance_trends() -> dict[str, Any]:
     # Daily success rate trend
     daily_performance = conn.execute(
         """
-        SELECT 
+        SELECT
             DATE(timestamp) as date,
             COUNT(*) as total_commands,
             AVG(CASE WHEN success THEN 1.0 ELSE 0.0 END) * 100 as success_rate,
             AVG(response_time_sec) as avg_response_time
-        FROM bot_usage 
+        FROM bot_usage
         GROUP BY DATE(timestamp)
         ORDER BY date
     """
@@ -85,13 +85,13 @@ def analyze_performance_trends() -> dict[str, Any]:
     # Command efficiency analysis
     command_efficiency = conn.execute(
         """
-        SELECT 
+        SELECT
             command,
             COUNT(*) as usage_count,
             AVG(response_time_sec) as avg_time,
             AVG(CASE WHEN success THEN 1.0 ELSE 0.0 END) * 100 as success_rate,
             COUNT(DISTINCT user_id) as unique_users
-        FROM bot_usage 
+        FROM bot_usage
         GROUP BY command
         ORDER BY usage_count DESC
     """
@@ -100,7 +100,7 @@ def analyze_performance_trends() -> dict[str, Any]:
     # Best promotion sources
     best_sources = conn.execute(
         """
-        SELECT 
+        SELECT
             source,
             COUNT(*) as total_promos,
             AVG(bonus_percentage) as avg_bonus,

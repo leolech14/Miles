@@ -42,7 +42,7 @@ async def receive_log(payload: LogPayload) -> dict[str, str]:
 
     except Exception as e:
         print(f"Error processing log: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/health")
@@ -55,4 +55,6 @@ if __name__ == "__main__":
     print("Starting CI Log Receiver on port 5051...")
     print("Use Ctrl+C for graceful shutdown")
 
-    uvicorn.run(app, host="0.0.0.0", port=5051, log_level="info", access_log=True)
+    uvicorn.run(
+        app, host="127.0.0.1", port=5051, log_level="info", access_log=True
+    )  # Bind to localhost only

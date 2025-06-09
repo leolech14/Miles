@@ -74,7 +74,7 @@ def test_metrics_context_managers():
         time.sleep(0.01)  # Small delay
 
     # Verify timing was recorded
-    samples = list(test_histogram.collect())[0].samples
+    samples = next(iter(test_histogram.collect())).samples
     assert any(
         sample.name.endswith("_count") and sample.value > 0 for sample in samples
     )
@@ -91,7 +91,7 @@ def test_metrics_context_managers():
         pass  # Expected
 
     # Verify counts
-    samples = list(test_counter.collect())[0].samples
+    samples = next(iter(test_counter.collect())).samples
     success_count = next(s.value for s in samples if "success" in str(s.labels))
     error_count = next(s.value for s in samples if "error" in str(s.labels))
 
@@ -107,7 +107,7 @@ def test_memory_usage_recording():
     record_memory_usage()
 
     # Check that memory gauge was updated
-    samples = list(memory_usage_bytes.collect())[0].samples
+    samples = next(iter(memory_usage_bytes.collect())).samples
     memory_value = samples[0].value
 
     # Memory should be positive
@@ -118,7 +118,7 @@ def test_bot_info_metrics():
     """Test that bot info metrics are populated."""
     from miles.metrics import bot_info
 
-    samples = list(bot_info.collect())[0].samples
+    samples = next(iter(bot_info.collect())).samples
     info_labels = samples[0].labels if samples else {}
 
     # Should have basic info
@@ -146,6 +146,6 @@ async def test_telegram_command_metrics():
         await ask_bot.ask(update, context)
 
     # Verify metrics were recorded
-    samples = list(telegram_commands_total.collect())[0].samples
+    samples = next(iter(telegram_commands_total.collect())).samples
     success_samples = [s for s in samples if "success" in str(s.labels)]
     assert len(success_samples) > 0

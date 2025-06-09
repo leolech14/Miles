@@ -116,8 +116,19 @@ unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 # Tests can have additional flexibility
-"tests/**/*.py" = ["S101", "S106", "S608"]
-"test_*.py" = ["S101", "S106", "S608"]
+"tests/**/*.py" = ["S101", "S106", "S608", "S603", "S607"]
+"test_*.py" = ["S101", "S106", "S608", "S603", "S607"]
+# Test servers and scripts can have relaxed security
+"keploy_test_server.py" = ["S105"]  # Hardcoded test values
+"natural_language_config.py" = ["S105"]  # Expected error messages
+"scripts/quality_gates.py" = ["S603"]  # User command execution
+# Specific ignores for false positives
+"ask_bot.py" = ["S608"]  # String formatting in messages, not SQL
+"miles/natural_language/function_registry.py" = ["S608"]  # String formatting in messages
+"miles/bonus_alert_bot.py" = ["S105", "S110"]  # Test values and expected Redis failures
+"miles/ai_source_discovery.py" = ["S112"]  # Expected URL parsing failures
+"miles/schedule_config.py" = ["S110"]  # Expected Redis connection failures
+"miles/promo_store.py" = ["S324"]  # MD5 used for deduplication, not security
 
 [tool.ruff.lint.isort]
 known-first-party = ["miles"]

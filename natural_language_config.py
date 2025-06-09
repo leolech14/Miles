@@ -86,7 +86,9 @@ class NaturalLanguageConfig:
             )
 
         if self.telegram_bot_token in {"not_set", "dummy", "placeholder", ""}:
-            errors["telegram_bot_token"] = "Telegram bot token is required"
+            errors["telegram_bot_token"] = (
+                "Telegram bot token is required"  # Expected error message
+            )
 
         if not self.telegram_chat_id:
             errors["telegram_chat_id"] = "Telegram chat ID is required"

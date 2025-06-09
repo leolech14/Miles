@@ -9,10 +9,11 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any
+from typing import Any, cast
 
 from openai import AsyncOpenAI
-from telegram import Update
+from openai.types.chat import ChatCompletion
+from telegram import Chat, Message, Update
 from telegram.ext import ContextTypes
 
 from miles.chat_store import ChatMemory
@@ -111,7 +112,8 @@ Remember: You're not just executing commands - you're having a conversation whil
 
         try:
             # Show typing indicator
-            await update.effective_chat.send_action(action="typing")
+            if update.effective_chat:
+                await update.effective_chat.send_action(action="typing")
 
             # Get conversation history
             conversation = self.memory.get(user_id)
@@ -137,19 +139,22 @@ Remember: You're not just executing commands - you're having a conversation whil
             # Call OpenAI with function calling
             response = await self.openai_client.chat.completions.create(
                 model=model,
-                messages=conversation[-20:],  # Keep last 20 messages for context
+                messages=cast(Any, conversation[-20:]),  # Keep last 20 messages for context
                 temperature=temperature,
                 max_tokens=max_tokens,
-                functions=function_registry.get_function_definitions(),
-                function_call="auto",
+                tools=cast(Any, [
+                    {"type": "function", "function": func}
+                    for func in function_registry.get_function_definitions()
+                ]),
+                tool_choice="auto",
             )
 
             choice = response.choices[0]
             message = choice.message
 
-            # Handle function calls
-            if message.function_call:
-                await self._handle_function_call(message, conversation, update, user_id)
+            # Handle tool calls (updated for new API)
+            if message.tool_calls:
+                await self._handle_tool_calls(message, conversation, update, user_id)
             else:
                 # Regular response without function call
                 if message.content:
@@ -169,50 +174,65 @@ Remember: You're not just executing commands - you're having a conversation whil
                 f"❌ Sorry, I encountered an error: {e!s}\n\nPlease try again or rephrase your request."
             )
 
-    async def _handle_function_call(
+    async def _handle_tool_calls(
         self,
         message: Any,
         conversation: list[dict[str, Any]],
         update: Update,
         user_id: int,
     ) -> None:
-        """Handle function call execution and response."""
-        function_name = message.function_call.name
-        function_args = json.loads(message.function_call.arguments)
+        """Handle tool call execution and response."""
+        if not message.tool_calls:
+            return
 
-        logger.info(f"Executing function: {function_name} with args: {function_args}")
+        # Process each tool call
+        for tool_call in message.tool_calls:
+            function_name = tool_call.function.name
+            function_args = json.loads(tool_call.function.arguments)
 
-        # Add the assistant's function call to conversation
-        conversation.append(
-            {
-                "role": "assistant",
-                "content": None,
-                "function_call": {
-                    "name": function_name,
-                    "arguments": message.function_call.arguments,
-                },
-            }
-        )
+            logger.info(f"Executing function: {function_name} with args: {function_args}")
 
-        # Execute the function
-        function_result = function_registry.execute_function(
-            function_name, function_args
-        )
+            # Add the assistant's tool call to conversation
+            conversation.append(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": tool_call.id,
+                            "type": "function",
+                            "function": {
+                                "name": function_name,
+                                "arguments": tool_call.function.arguments,
+                            },
+                        }
+                    ],
+                }
+            )
 
-        # Add function result to conversation
-        conversation.append(
-            {
-                "role": "function",
-                "name": function_name,
-                "content": json.dumps(function_result),
-            }
-        )
+            # Execute the function
+            function_result = function_registry.execute_function(
+                function_name, function_args
+            )
+
+            # Add function result to conversation
+            conversation.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(function_result),
+                }
+            )
 
         # Get AI response to the function result
         try:
+            if not self.openai_client:
+                await self._send_fallback_response(update, function_name, function_result)
+                return
+
             follow_up_response = await self.openai_client.chat.completions.create(
                 model=self.memory.get_user_preference(user_id, "model") or "gpt-4o",
-                messages=conversation[-20:],
+                messages=cast(Any, conversation[-20:]),
                 temperature=float(
                     self.memory.get_user_preference(user_id, "temperature") or "0.7"
                 ),
@@ -222,7 +242,7 @@ Remember: You're not just executing commands - you're having a conversation whil
             )
 
             ai_response = follow_up_response.choices[0].message.content
-            if ai_response:
+            if ai_response and update.message:
                 conversation.append({"role": "assistant", "content": ai_response})
                 self.memory.save(user_id, conversation[-20:])
                 await update.message.reply_text(ai_response)
@@ -236,6 +256,9 @@ Remember: You're not just executing commands - you're having a conversation whil
         self, update: Update, function_name: str, function_result: dict[str, Any]
     ) -> None:
         """Send a fallback response when AI processing fails."""
+        if not update.message:
+            return
+
         if function_result.get("success"):
             if function_name == "scan_for_promotions":
                 promos = function_result.get("promotions", [])
@@ -267,9 +290,10 @@ Remember: You're not just executing commands - you're having a conversation whil
     ) -> None:
         """Handle image messages with multimodal AI."""
         if not self.openai_client:
-            await update.message.reply_text(
-                "❌ Image analysis not available. OpenAI API key not configured."
-            )
+            if update.message:
+                await update.message.reply_text(
+                    "❌ Image analysis not available. OpenAI API key not configured."
+                )
             return
 
         if not update.message or not update.message.photo or not update.effective_user:
@@ -292,7 +316,9 @@ Remember: You're not just executing commands - you're having a conversation whil
                 )
 
             # Prepare message content with image
-            content = [{"type": "image_url", "image_url": {"url": file_url}}]
+            content: list[dict[str, Any]] = [
+                {"type": "image_url", "image_url": {"url": file_url}}
+            ]
 
             # Add text caption if provided
             if update.message.caption:
@@ -306,24 +332,27 @@ Remember: You're not just executing commands - you're having a conversation whil
                     },
                 )
 
-            conversation.append({"role": "user", "content": content})
+            conversation.append({"role": "user", "content": cast(Any, content)})
 
             # Use GPT-4o for vision capabilities
             response = await self.openai_client.chat.completions.create(
                 model="gpt-4o",  # Force vision-capable model
-                messages=conversation[-10:],  # Fewer messages for vision
+                messages=cast(Any, conversation[-10:]),  # Fewer messages for vision
                 temperature=0.7,
                 max_tokens=1500,
-                functions=function_registry.get_function_definitions(),
-                function_call="auto",
+                tools=cast(Any, [
+                    {"type": "function", "function": func}
+                    for func in function_registry.get_function_definitions()
+                ]),
+                tool_choice="auto",
             )
 
             choice = response.choices[0]
             message = choice.message
 
-            # Handle function calls or regular response
-            if message.function_call:
-                await self._handle_function_call(message, conversation, update, user_id)
+            # Handle tool calls or regular response
+            if message.tool_calls:
+                await self._handle_tool_calls(message, conversation, update, user_id)
             else:
                 if message.content:
                     conversation.append(
@@ -334,7 +363,8 @@ Remember: You're not just executing commands - you're having a conversation whil
 
         except Exception as e:
             logger.exception(f"Error in image handling: {e}")
-            await update.message.reply_text(f"❌ Image analysis failed: {e!s}")
+            if update.message:
+                await update.message.reply_text(f"❌ Image analysis failed: {e!s}")
 
     def clear_conversation(self, user_id: int) -> None:
         """Clear conversation history for a user."""
