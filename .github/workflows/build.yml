@@ -21,8 +21,6 @@ jobs:
 
       - name: Setup Trunk
         uses: trunk-io/trunk-action@v1
-        with:
-          check-mode: all
 
   # 🧪 Layer 2: Static Analysis & Tests
   test-and-analyze:
