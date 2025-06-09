@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import Final, List, Set, Tuple
+from typing import Final, List, Set, Tuple, Any
 
 import redis
 import aiohttp
@@ -48,7 +48,7 @@ STORE = SourceStore()
 
 # ───────────────────────── Redis helpers ─────────────────────────
 _SETTINGS = get_settings()
-_R: Final = redis.from_url(_SETTINGS.redis_url, decode_responses=True)
+_R: Final = redis.from_url(_SETTINGS.redis_url, decode_responses=True)  # type: ignore[no-untyped-call]
 
 KEY_GPT_CHAT = "miles:gpt_mode:{chat_id}"  # per-chat toggle
 KEY_GPT_GLOBAL = "miles:gpt_mode:global"  # global toggle (0 / 1)
@@ -56,8 +56,8 @@ KEY_MAX_TOKENS = "miles:openai:max_tokens"  # int
 
 
 def _chat_enabled(chat_id: int) -> bool:
-    global_flag = _R.get(KEY_GPT_GLOBAL) == "1"
-    local_flag = _R.get(KEY_GPT_CHAT.format(chat_id=chat_id)) == "1"
+    global_flag = bool(_R.get(KEY_GPT_GLOBAL) == "1")
+    local_flag = bool(_R.get(KEY_GPT_CHAT.format(chat_id=chat_id)) == "1")
     return global_flag or local_flag
 
 
@@ -70,17 +70,23 @@ async def _toggle_chat(chat_id: int, enabled: bool) -> None:
 
 
 async def gpt_on(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_chat or not update.effective_message:
+        return
     await _toggle_chat(update.effective_chat.id, True)
     await update.effective_message.reply_text("🤖 GPT chat mode is ON.")
 
 
 async def gpt_off(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_chat or not update.effective_message:
+        return
     await _toggle_chat(update.effective_chat.id, False)
     await update.effective_message.reply_text("🛑 GPT chat mode is OFF.")
 
 
 async def gpt_global(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles /gpt-global-on and /gpt-global-off"""
+    if not update.message or not update.message.text or not update.effective_message:
+        return
     enable = update.message.text.endswith("on")
     _R.set(KEY_GPT_GLOBAL, "1" if enable else "0")
     state = "ON" if enable else "OFF"
@@ -88,7 +94,9 @@ async def gpt_global(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 # ───────────────────────── OpenAI settings ──────────────────────
-async def set_max_tokens(update: Update, context: CallbackContext) -> None:
+async def set_max_tokens(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
     if not context.args:
         await update.message.reply_text("Usage: /setmaxtokens <100-4096>")
         return
@@ -105,11 +113,14 @@ async def set_max_tokens(update: Update, context: CallbackContext) -> None:
 
 
 # ───────────────────────── Diagnostics ──────────────────────────
-async def diag(update: Update, _: CallbackContext) -> None:
+async def diag(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     """Ping OpenAI and Redis; return status."""
+    if not update.message:
+        return
     async with aiohttp.ClientSession() as sess:
         try:
-            async with sess.get("https://api.openai.com/v1/models", timeout=8) as r:
+            timeout = aiohttp.ClientTimeout(total=8)
+            async with sess.get("https://api.openai.com/v1/models", timeout=timeout) as r:
                 ok = r.status == 200
         except Exception as exc:  # noqa: BLE001
             ok = False
@@ -220,6 +231,8 @@ Remember: You're an expert on Brazilian mileage programs, transfer bonuses, and 
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_chat or not update.effective_message:
+        return
     if not _chat_enabled(update.effective_chat.id):
         return
     prompt = (update.effective_message.text or "").strip()
@@ -236,7 +249,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ───────────────────────── Help system ─────────────────────────
-async def help_cmd(update: Update, context: CallbackContext) -> None:
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Comprehensive help system explaining the entire Miles bot."""
 
     # If no specific section requested, show main menu
@@ -481,13 +494,14 @@ Advanced AI system that can autonomously:
     else:
         text = f"❌ Unknown help section: {section}\n\nUse /help to see all available sections."
 
-    await update.message.reply_text(
-        text, parse_mode=ParseMode.HTML, disable_web_page_preview=True
-    )
+    if update.message:
+        await update.message.reply_text(
+            text, parse_mode=ParseMode.HTML, disable_web_page_preview=True
+        )
 
 
 # ───────────────────────── Plugin management ────────────────────
-async def plugins_cmd(update: Update, context: CallbackContext) -> None:
+async def plugins_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Plugin management interface."""
     args = context.args
     action = args[0] if args else "list"
@@ -579,18 +593,14 @@ async def plugins_cmd(update: Update, context: CallbackContext) -> None:
 
 
 # ───────────────────────── Dynamic /config ──────────────────────
-async def config_cmd(
-    update: Update, context: CallbackContext[object, object, object, object]
-) -> None:
+async def config_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.effective_chat:
         return
     chat_id = update.effective_chat.id
     gpt_state = "ON ✅" if _chat_enabled(chat_id) else "OFF ❌"
     max_tok = _R.get(KEY_MAX_TOKENS) or "1000 (default)"
     # ⬇︎ build list from dispatcher so it never goes stale
-    app: Application[object, object, object, object, object, object] = (
-        context.application
-    )
+    app: Any = context.application
     lines: List[str] = [
         "<b>🤖 Current Configuration</b>",
         "",
@@ -616,7 +626,7 @@ async def config_cmd(
 
 
 # ───────────────────────── Build application ────────────────────
-def build_app() -> Application[object, object, object, object, object, object]:
+def build_app() -> Any:
     builder = (
         ApplicationBuilder()
         .token(_SETTINGS.telegram_bot_token)

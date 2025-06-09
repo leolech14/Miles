@@ -5,7 +5,7 @@ from datetime import datetime
 from miles.plugin_loader import discover_plugins
 
 
-def test_plugin_discovery():
+def test_plugin_discovery() -> None:
     """Test that plugins can be discovered via entry points."""
     plugins = discover_plugins()
 
@@ -20,7 +20,7 @@ def test_plugin_discovery():
     assert demo.categories == ["bonus"]
 
 
-def test_plugin_scrape():
+def test_plugin_scrape() -> None:
     """Test that plugins can be scraped."""
     plugins = discover_plugins()
     demo = plugins["demo-hello"]

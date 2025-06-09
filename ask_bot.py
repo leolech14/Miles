@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any, Optional, List
 
 import asyncio
 from telegram import Update
@@ -47,7 +48,7 @@ OPTIONAL_ENV_VARS = [
 ]
 
 
-def check_environment_variables():
+def check_environment_variables() -> None:
     """Check required environment variables and exit if missing"""
     print(
         f"[ask_bot] Checking required environment variables: {', '.join(REQUIRED_ENV_VARS)}"
