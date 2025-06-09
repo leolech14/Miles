@@ -4,14 +4,15 @@ PDF to CSV processing script for all PDFs in the all_pdfs/ directory.
 This script will process each PDF and create a corresponding CSV file.
 """
 
-import os
 import glob
-import pandas as pd
+import os
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
+
+import pandas as pd
 
 
-def find_pdf_files(directory: str = "all_pdfs") -> List[str]:
+def find_pdf_files(directory: str = "all_pdfs") -> list[str]:
     """Find all PDF files in the specified directory."""
     pdf_pattern = os.path.join(directory, "*.pdf")
     pdf_files = glob.glob(pdf_pattern)
@@ -40,7 +41,7 @@ def process_pdf_to_csv(pdf_path: str) -> str:
     return csv_path
 
 
-def process_all_pdfs() -> Dict[str, Any]:
+def process_all_pdfs() -> dict[str, Any]:
     """Process all PDFs in the directory and return summary statistics."""
 
     # Check if directory exists
@@ -75,8 +76,8 @@ def process_all_pdfs() -> Dict[str, Any]:
             csvs_created.append(csv_path)
             print(f"✅ Processed: {pdf_path} -> {csv_path}")
         except Exception as e:
-            errors.append(f"❌ Error processing {pdf_path}: {str(e)}")
-            print(f"❌ Error processing {pdf_path}: {str(e)}")
+            errors.append(f"❌ Error processing {pdf_path}: {e!s}")
+            print(f"❌ Error processing {pdf_path}: {e!s}")
 
     return {
         "status": "completed",

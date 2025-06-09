@@ -14,7 +14,7 @@ The core app discovers plug-ins through `importlib.metadata.entry_points`
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Protocol, TypedDict
+from typing import Protocol, TypedDict
 
 
 class Promo(TypedDict, total=False):
@@ -27,9 +27,9 @@ class Promo(TypedDict, total=False):
     source: str  # plug-in ID
 
 
-class Plugin(Protocol):  # noqa: D101 (docstring above covers it)
+class Plugin(Protocol):
     name: str
     schedule: str
     categories: list[str]
 
-    def scrape(self, since: datetime) -> List[Promo]: ...
+    def scrape(self, since: datetime) -> list[Promo]: ...

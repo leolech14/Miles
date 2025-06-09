@@ -1,5 +1,6 @@
-from pathlib import Path
 import sys
+from pathlib import Path
+
 from miles.storage import FileSeenStore
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))

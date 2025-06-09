@@ -6,13 +6,12 @@ import hashlib
 import json
 import logging
 import os
-from datetime import datetime, UTC
-from typing import List, Set, Optional
+from datetime import UTC, datetime
 
 import redis
 
-from miles.plugin_api import Promo
 from config import get_settings
+from miles.plugin_api import Promo
 
 logger = logging.getLogger("miles.promo_store")
 
@@ -22,7 +21,7 @@ class PromoStore:
 
     def __init__(self) -> None:
         settings = get_settings()
-        self._redis: Optional[redis.Redis[str]] = None
+        self._redis: redis.Redis[str] | None = None
         try:
             self._redis = redis.from_url(settings.redis_url, decode_responses=True)
             self._redis.ping()  # Test connection
@@ -31,9 +30,9 @@ class PromoStore:
             logger.warning("Redis unavailable, using in-memory storage")
             self._redis = None
             self._use_redis = False
-            self._memory_store: Set[str] = set()
+            self._memory_store: set[str] = set()
 
-    def add_promos(self, promos: List[Promo]) -> List[Promo]:
+    def add_promos(self, promos: list[Promo]) -> list[Promo]:
         """Add promos to store, returning only new ones."""
         new_promos = []
 
@@ -97,7 +96,7 @@ class PromoNotifier:
     def __init__(self) -> None:
         self.min_bonus = int(os.getenv("MIN_BONUS", "80"))
 
-    def notify_promos(self, promos: List[Promo]) -> None:
+    def notify_promos(self, promos: list[Promo]) -> None:
         """Send notifications for qualifying promos."""
         qualifying_promos = self._filter_promos(promos)
 
@@ -107,7 +106,7 @@ class PromoNotifier:
         for promo in qualifying_promos:
             self._send_notification(promo)
 
-    def _filter_promos(self, promos: List[Promo]) -> List[Promo]:
+    def _filter_promos(self, promos: list[Promo]) -> list[Promo]:
         """Filter promos that meet notification criteria."""
         filtered = []
 
@@ -142,7 +141,7 @@ class PromoNotifier:
 
 🔗 <a href="{url}">Ver promoção</a>
 📊 Fonte: {source}
-⏰ {datetime.now(UTC).strftime('%H:%M - %d/%m/%Y')}"""
+⏰ {datetime.now(UTC).strftime("%H:%M - %d/%m/%Y")}"""
 
             send_telegram(message)
             logger.info(f"Notification sent: {program} {bonus_pct}% bonus")
@@ -152,8 +151,8 @@ class PromoNotifier:
 
 
 # Global instances
-_promo_store: Optional[PromoStore] = None
-_promo_notifier: Optional[PromoNotifier] = None
+_promo_store: PromoStore | None = None
+_promo_notifier: PromoNotifier | None = None
 
 
 def get_promo_store() -> PromoStore:
@@ -172,7 +171,7 @@ def get_promo_notifier() -> PromoNotifier:
     return _promo_notifier
 
 
-def process_plugin_promos(promos: List[Promo]) -> None:
+def process_plugin_promos(promos: list[Promo]) -> None:
     """Process promos from plugins - deduplication and notification."""
     if not promos:
         return

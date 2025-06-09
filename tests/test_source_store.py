@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import fakeredis
 import redis
-from pathlib import Path
 from _pytest.monkeypatch import MonkeyPatch
+
 from miles.source_store import SourceStore
 
 

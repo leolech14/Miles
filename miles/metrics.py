@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 import prometheus_client
-from prometheus_client import Counter, Histogram, Gauge, Info
-
+from prometheus_client import Counter, Gauge, Histogram, Info
 
 # Bot operation metrics
 promo_scrape_duration = Histogram(
@@ -130,9 +129,10 @@ bot_info = Info(
 
 # Initialize bot info
 try:
+    import os
+
     import miles
     from miles.plugin_loader import discover_plugins
-    import os
 
     plugins_count = len(discover_plugins())
     bot_info.info(
@@ -189,8 +189,9 @@ def update_active_sources_count(count: int) -> None:
 def record_memory_usage() -> None:
     """Record current memory usage."""
     try:
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         memory_usage_bytes.set(process.memory_info().rss)

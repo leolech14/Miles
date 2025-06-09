@@ -1,8 +1,9 @@
 """Smiles Program Monitor Plugin."""
 
+import re
 from datetime import datetime
 from typing import List
-import re
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -27,7 +28,7 @@ class SmilesMonitorPlugin:
             "https://passageirodeprimeira.com/tag/smiles/",
         ]
 
-    def scrape(self, since: datetime) -> List[Promo]:
+    def scrape(self, since: datetime) -> list[Promo]:
         """Scan Smiles-related sources for bonus promotions."""
         promos = []
 
@@ -52,7 +53,7 @@ class SmilesMonitorPlugin:
             print(f"[{self.name}] Failed to fetch {url}: {e}")
             return None
 
-    def _parse_smiles_content(self, content: str, source_url: str) -> List[Promo]:
+    def _parse_smiles_content(self, content: str, source_url: str) -> list[Promo]:
         """Parse content for Smiles bonus promotions."""
         promos = []
         soup = BeautifulSoup(content, "html.parser")

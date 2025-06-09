@@ -7,16 +7,17 @@ It replaces the basic DuckDuckGo search with advanced AI reasoning.
 from __future__ import annotations
 
 import json
-import requests
-from typing import List, Dict, Optional, Any, cast
-from urllib.parse import urlparse, quote_plus
-from bs4 import BeautifulSoup
-
-from openai import OpenAI
-from miles.source_store import SourceStore
-from miles.bonus_alert_bot import HEADERS, send_telegram
-import os
 import logging
+import os
+from typing import Any, cast
+from urllib.parse import quote_plus, urlparse
+
+import requests
+from bs4 import BeautifulSoup
+from openai import OpenAI
+
+from miles.bonus_alert_bot import HEADERS, send_telegram
+from miles.source_store import SourceStore
 
 logger = logging.getLogger("miles.ai_source_discovery")
 
@@ -28,7 +29,7 @@ class AISourceDiscovery:
         self.openai_client = self._get_openai_client()
         self.store = SourceStore()
 
-    def _get_openai_client(self) -> Optional[OpenAI]:
+    def _get_openai_client(self) -> OpenAI | None:
         """Get OpenAI client if available"""
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key or api_key == "not_set":
@@ -38,7 +39,7 @@ class AISourceDiscovery:
             return None
         return OpenAI(api_key=api_key)
 
-    def generate_search_queries(self) -> List[str]:
+    def generate_search_queries(self) -> list[str]:
         """Use AI to generate intelligent search queries for Brazilian mileage sources"""
         if not self.openai_client:
             return ["transferencia de pontos bonus milhas brasil"]
@@ -83,7 +84,7 @@ Return only the search queries, one per line.""",
             logger.error(f"AI query generation failed: {e}")
             return ["transferencia de pontos bonus milhas brasil"]
 
-    def search_multiple_engines(self, queries: List[str]) -> List[str]:
+    def search_multiple_engines(self, queries: list[str]) -> list[str]:
         """Search multiple engines with different queries"""
         all_urls = set()
 
@@ -106,7 +107,7 @@ Return only the search queries, one per line.""",
 
         return list(all_urls)
 
-    def _search_duckduckgo(self, query: str) -> List[str]:
+    def _search_duckduckgo(self, query: str) -> list[str]:
         """Search DuckDuckGo for sources"""
         url = f"https://duckduckgo.com/html/?q={quote_plus(query)}"
         try:
@@ -115,7 +116,7 @@ Return only the search queries, one per line.""",
         except Exception:
             return []
 
-    def _search_bing(self, query: str) -> List[str]:
+    def _search_bing(self, query: str) -> list[str]:
         """Search Bing for sources"""
         url = f"https://www.bing.com/search?q={quote_plus(query)}"
         try:
@@ -124,7 +125,7 @@ Return only the search queries, one per line.""",
         except Exception:
             return []
 
-    def _extract_urls_from_html(self, html: str) -> List[str]:
+    def _extract_urls_from_html(self, html: str) -> list[str]:
         """Extract URLs from search result HTML"""
         soup = BeautifulSoup(html, "html.parser")
         urls = set()
@@ -154,7 +155,7 @@ Return only the search queries, one per line.""",
 
         return list(urls)
 
-    def ai_validate_source(self, url: str) -> Dict[str, Any]:
+    def ai_validate_source(self, url: str) -> dict[str, Any]:
         """Use AI to validate if a source is relevant for mileage tracking"""
         if not self.openai_client:
             # Fallback to basic validation
@@ -209,7 +210,7 @@ Respond with JSON:
             content = ai_response.choices[0].message.content
             if content:
                 try:
-                    result = cast(Dict[str, Any], json.loads(content))
+                    result = cast(dict[str, Any], json.loads(content))
                     logger.info(f"AI validation for {url}: {result}")
                     return result
                 except json.JSONDecodeError:
@@ -221,7 +222,7 @@ Respond with JSON:
             logger.error(f"AI validation failed for {url}: {e}")
             return self._basic_validate_source(url)
 
-    def _basic_validate_source(self, url: str) -> Dict[str, Any]:
+    def _basic_validate_source(self, url: str) -> dict[str, Any]:
         """Basic validation fallback"""
         domain = url.lower()
         keywords = [
@@ -245,7 +246,7 @@ Respond with JSON:
             "content_quality": "unknown",
         }
 
-    def discover_and_add_sources(self) -> List[str]:
+    def discover_and_add_sources(self) -> list[str]:
         """Main method to discover and add new sources"""
         logger.info("🧠 Starting AI-powered source discovery...")
 
@@ -263,7 +264,7 @@ Respond with JSON:
         logger.info(f"Filtering to {len(new_candidates)} new candidates")
 
         # AI validation and addition
-        added_sources: List[str] = []
+        added_sources: list[str] = []
         for url in new_candidates[:10]:  # Limit to 10 to avoid rate limits
             try:
                 validation = self.ai_validate_source(url)
@@ -298,7 +299,7 @@ Respond with JSON:
         return added_sources
 
 
-def ai_update_sources() -> List[str]:
+def ai_update_sources() -> list[str]:
     """Main function for AI-powered source updates"""
     discovery = AISourceDiscovery()
     return discovery.discover_and_add_sources()

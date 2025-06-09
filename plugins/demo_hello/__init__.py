@@ -9,7 +9,7 @@ class HelloPlugin:  # matches the SDK
     schedule = "@hourly"
     categories = ["bonus"]
 
-    def scrape(self, since: datetime) -> List[Promo]:
+    def scrape(self, since: datetime) -> list[Promo]:
         return [
             Promo(
                 program="DEMO",

@@ -1,7 +1,8 @@
+import sys
+from pathlib import Path
+
 import fakeredis
 import redis
-from pathlib import Path
-import sys
 from _pytest.monkeypatch import MonkeyPatch
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))

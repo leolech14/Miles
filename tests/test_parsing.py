@@ -1,7 +1,8 @@
-from pathlib import Path
 import sys
-import yaml
+from pathlib import Path
+
 import pytest
+import yaml
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import miles.bonus_alert_bot as bot

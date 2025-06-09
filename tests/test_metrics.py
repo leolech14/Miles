@@ -1,15 +1,14 @@
 """Tests for the metrics system."""
 
+import sys
 import threading
 import time
 from http.server import HTTPServer
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 import requests
-
-import sys
-from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -64,7 +63,7 @@ def test_metrics_endpoint():
 
 def test_metrics_context_managers():
     """Test metrics context managers work correctly."""
-    from miles.metrics import time_operation, count_operation, Histogram, Counter
+    from miles.metrics import Counter, Histogram, count_operation, time_operation
 
     # Create test metrics
     test_histogram = Histogram("test_duration_seconds", "Test histogram", ["operation"])
@@ -102,7 +101,7 @@ def test_metrics_context_managers():
 
 def test_memory_usage_recording():
     """Test memory usage recording function."""
-    from miles.metrics import record_memory_usage, memory_usage_bytes
+    from miles.metrics import memory_usage_bytes, record_memory_usage
 
     # Record memory usage
     record_memory_usage()
@@ -131,9 +130,10 @@ def test_bot_info_metrics():
 @pytest.mark.asyncio
 async def test_telegram_command_metrics():
     """Test that Telegram command metrics are recorded."""
-    from miles.metrics import telegram_commands_total
     from unittest.mock import AsyncMock, MagicMock
+
     import ask_bot
+    from miles.metrics import telegram_commands_total
 
     # Mock the update and context
     update = MagicMock()

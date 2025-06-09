@@ -7,7 +7,7 @@ We expose key bot functions as HTTP endpoints for testing.
 """
 
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -40,7 +40,7 @@ class ScanRequest(BaseModel):
 
 
 class ScanResponse(BaseModel):
-    alerts: List[Dict[str, Any]]
+    alerts: list[dict[str, Any]]
     count: int
     status: str
 
@@ -50,7 +50,7 @@ class SourceRequest(BaseModel):
 
 
 class SourceResponse(BaseModel):
-    sources: List[str]
+    sources: list[str]
     count: int
 
 
@@ -72,7 +72,7 @@ async def get_sources() -> SourceResponse:
 
 
 @app.post("/sources")
-async def add_source(request: SourceRequest) -> Dict[str, Any]:
+async def add_source(request: SourceRequest) -> dict[str, Any]:
     """Add a new source"""
     try:
         store = SourceStore()
@@ -117,7 +117,7 @@ async def manual_scan(request: ScanRequest) -> ScanResponse:
 
 
 @app.get("/plugins")
-async def get_plugins() -> Dict[str, Any]:
+async def get_plugins() -> dict[str, Any]:
     """Get all available plugins"""
     try:
         plugins = discover_plugins()
@@ -136,7 +136,7 @@ async def get_plugins() -> Dict[str, Any]:
 
 
 @app.get("/metrics")
-async def get_metrics() -> Dict[str, Any]:
+async def get_metrics() -> dict[str, Any]:
     """Get bot metrics and stats"""
     try:
         # Get promo store stats
@@ -157,7 +157,7 @@ async def get_metrics() -> Dict[str, Any]:
 
 
 @app.post("/test-notification")
-async def test_notification() -> Dict[str, Any]:
+async def test_notification() -> dict[str, Any]:
     """Test the notification system"""
     try:
         # Create a test promo

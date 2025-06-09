@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from urllib.parse import urlparse, parse_qs, unquote, quote_plus
+import os
+from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from miles.bonus_alert_bot import send_telegram, HEADERS
-import os
+from miles.bonus_alert_bot import HEADERS, send_telegram
 
 SOURCES_PATH = os.getenv("SOURCES_PATH", "sources.yaml")
 

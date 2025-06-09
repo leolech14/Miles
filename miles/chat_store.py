@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta  # noqa: F401
 import json
 import os
-from pathlib import Path
-from typing import cast, Optional
-import redis
 import sys
+from datetime import datetime, timedelta  # noqa: F401
+from pathlib import Path
+from typing import cast
+
+import redis
 
 
 class ChatMemory:
     def __init__(self) -> None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        self.r: Optional[redis.Redis[str]] = None
+        self.r: redis.Redis[str] | None = None
         self.chat_dir = Path("chat_history")
         self.prefs_dir = Path("user_preferences")
 
@@ -55,7 +56,7 @@ class ChatMemory:
                     with open(chat_file) as f:
                         data = json.load(f)
                         return cast(list[dict[str, str]], data)
-                except (json.JSONDecodeError, IOError):
+                except (OSError, json.JSONDecodeError):
                     return []
             return []
 
@@ -69,7 +70,7 @@ class ChatMemory:
             try:
                 with open(chat_file, "w") as f:
                     json.dump(messages, f)
-            except IOError:
+            except OSError:
                 pass  # Silent fail for file write issues
 
     def clear(self, user_id: int) -> None:
@@ -82,13 +83,13 @@ class ChatMemory:
             if chat_file.exists():
                 try:
                     chat_file.unlink()
-                except IOError:
+                except OSError:
                     pass  # Silent fail for file deletion issues
 
     def _pref_key(self, user_id: int) -> str:
         return f"prefs:{user_id}"
 
-    def get_user_preference(self, user_id: int, key: str) -> Optional[str]:
+    def get_user_preference(self, user_id: int, key: str) -> str | None:
         if self.r:
             # Try Redis first
             prefs_raw = self.r.get(self._pref_key(user_id))
@@ -106,7 +107,7 @@ class ChatMemory:
                         return (
                             str(prefs.get(key)) if prefs.get(key) is not None else None
                         )
-                except (json.JSONDecodeError, IOError):
+                except (OSError, json.JSONDecodeError):
                     return None
             return None
 
@@ -134,7 +135,7 @@ class ChatMemory:
                 prefs[key] = value
                 with open(prefs_file, "w") as f:
                     json.dump(prefs, f)
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 pass  # Silent fail for file operations
 
     def get_all_user_preferences(self, user_id: int) -> dict[str, str]:
@@ -153,6 +154,6 @@ class ChatMemory:
                     with open(prefs_file) as f:
                         prefs = json.load(f)
                         return {k: str(v) for k, v in prefs.items()}
-                except (json.JSONDecodeError, IOError):
+                except (OSError, json.JSONDecodeError):
                     return {}
             return {}

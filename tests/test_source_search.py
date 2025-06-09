@@ -1,6 +1,7 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import Mock
+
 from _pytest.monkeypatch import MonkeyPatch
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))

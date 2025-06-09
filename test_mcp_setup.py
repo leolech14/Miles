@@ -3,10 +3,11 @@
 Test script to verify MCP setup and database connections.
 """
 
-import subprocess
 import sqlite3
-import duckdb
+import subprocess
 import sys
+
+import duckdb
 
 
 def test_postgresql_connection() -> None:
@@ -37,7 +38,7 @@ def test_postgresql_connection() -> None:
             # Don't fail CI for PostgreSQL since it's optional
             assert True
     except Exception as e:
-        print(f"⚠️ PostgreSQL test failed: {str(e)}")
+        print(f"⚠️ PostgreSQL test failed: {e!s}")
         # Don't fail CI for PostgreSQL since it's optional
         assert True
 
@@ -51,7 +52,7 @@ def test_sqlite_connection() -> None:
         print(f"✅ SQLite: {result[0]}")
         assert result[0] == "SQLite Connected"
     except Exception as e:
-        print(f"❌ SQLite test failed: {str(e)}")
+        print(f"❌ SQLite test failed: {e!s}")
         assert False, f"SQLite connection failed: {e}"
 
 
@@ -64,7 +65,7 @@ def test_duckdb_connection() -> None:
         print(f"✅ DuckDB: {result[0]}")
         assert result[0] == "DuckDB Connected"
     except Exception as e:
-        print(f"❌ DuckDB test failed: {str(e)}")
+        print(f"❌ DuckDB test failed: {e!s}")
         assert False, f"DuckDB connection failed: {e}"
 
 
@@ -86,7 +87,7 @@ def test_playwright_mcp() -> None:
             # Don't fail CI for optional MCP servers
             assert True
     except Exception as e:
-        print(f"⚠️ Playwright MCP test failed: {str(e)}")
+        print(f"⚠️ Playwright MCP test failed: {e!s}")
         # Don't fail CI for optional MCP servers
         assert True
 
@@ -111,7 +112,7 @@ def test_postgres_mcp() -> None:
             # Don't fail CI for optional MCP servers
             assert True
     except Exception as e:
-        print(f"⚠️ PostgreSQL MCP test failed: {str(e)}")
+        print(f"⚠️ PostgreSQL MCP test failed: {e!s}")
         # Don't fail CI for optional MCP servers
         assert True
 

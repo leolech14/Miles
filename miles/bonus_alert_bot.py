@@ -5,14 +5,15 @@
 Monitor official mileage program pages for point transfer bonuses and alert a
 Telegram chat when a new promotion is detected.
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
-from typing import Final, List, Set, Tuple, Any
+from typing import Any, Final
 
-import redis
 import aiohttp
+import redis
 import requests
 from telegram import Update
 from telegram.constants import ParseMode
@@ -30,9 +31,8 @@ from telegram.ext import (
 # Or, if config.py does not exist, create it with a get_settings function.
 from config import get_settings
 from miles.logging_config import setup_logging
-from miles.source_store import SourceStore
 from miles.plugin_loader import discover_plugins
-
+from miles.source_store import SourceStore
 
 logger = setup_logging().getChild(__name__)
 
@@ -47,6 +47,7 @@ STORE = SourceStore()
 # ───────────────────────── Redis helpers ─────────────────────────
 _SETTINGS = get_settings()
 
+
 def _get_redis() -> redis.Redis | None:
     """Get Redis client if available."""
     try:
@@ -55,6 +56,7 @@ def _get_redis() -> redis.Redis | None:
     except Exception:
         pass
     return None
+
 
 _R: Final = _get_redis()
 
@@ -104,7 +106,9 @@ async def gpt_global(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         _R.set(KEY_GPT_GLOBAL, "1" if enable else "0")
     state = "ON" if enable else "OFF"
     redis_status = " (Redis unavailable)" if _R is None else ""
-    await update.effective_message.reply_text(f"🌐 GPT GLOBAL mode {state}{redis_status}")
+    await update.effective_message.reply_text(
+        f"🌐 GPT GLOBAL mode {state}{redis_status}"
+    )
 
 
 # ───────────────────────── OpenAI settings ──────────────────────
@@ -140,7 +144,7 @@ async def diag(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
                 "https://api.openai.com/v1/models", timeout=timeout
             ) as r:
                 ok = r.status == 200
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             ok = False
             logger.exception("OpenAI ping failed: %s", exc)
     redis_ok = True
@@ -162,6 +166,7 @@ async def call_gpt(prompt: str, max_tokens: int = 1000) -> str:
     """Enhanced GPT call with comprehensive system understanding."""
     try:
         import openai
+
         from config import get_settings
 
         settings = get_settings()
@@ -248,7 +253,7 @@ Remember: You're an expert on Brazilian mileage programs, transfer bonuses, and 
 
     except Exception as e:
         logger.exception("Enhanced GPT call failed")
-        return f"⚠️ AI temporarily unavailable: {str(e)}"
+        return f"⚠️ AI temporarily unavailable: {e!s}"
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -264,7 +269,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         max_tok = int(_R.get(KEY_MAX_TOKENS) or 1000) if _R else 1000
         answer = await call_gpt(prompt, max_tokens=max_tok)
         await update.effective_message.reply_text(answer, parse_mode=ParseMode.MARKDOWN)
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("GPT call failed")
         await update.effective_message.reply_text("⚠️ LLM unavailable.")
 
@@ -565,10 +570,10 @@ async def plugins_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 if promos:
                     text += "\n\n📊 <b>Sample Results:</b>"
                     for i, promo in enumerate(promos[:3]):  # Show first 3
-                        text += f"\n{i+1}. {promo.get('title', 'Untitled')} ({promo.get('bonus_pct', 0)}%)"
+                        text += f"\n{i + 1}. {promo.get('title', 'Untitled')} ({promo.get('bonus_pct', 0)}%)"
 
             except Exception as e:
-                text = f"❌ <b>Plugin Test Failed: {plugin_name}</b>\n\nError: {str(e)}\n\nCheck plugin implementation and dependencies."
+                text = f"❌ <b>Plugin Test Failed: {plugin_name}</b>\n\nError: {e!s}\n\nCheck plugin implementation and dependencies."
 
     elif action == "info" and args and len(args) >= 2:
         plugin_name = args[1]
@@ -583,7 +588,7 @@ async def plugins_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 <b>📋 Details:</b>
 • Name: <code>{plugin.name}</code>
 • Schedule: <code>{plugin.schedule}</code>
-• Categories: {', '.join(plugin.categories)}
+• Categories: {", ".join(plugin.categories)}
 
 <b>🔧 Technical:</b>
 • Type: {type(plugin).__name__}
@@ -623,7 +628,7 @@ async def config_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     max_tok = max_tok or "1000 (default)"
     # ⬇︎ build list from dispatcher so it never goes stale
     app: Any = context.application
-    lines: List[str] = [
+    lines: list[str] = [
         "<b>🤖 Current Configuration</b>",
         "",
         "<b>OpenAI</b>",
@@ -713,9 +718,9 @@ def send_telegram(message: str, chat_id: str | None = None) -> None:
 
 
 # ───────────────────────── Scanning functions ────────────────────
-def scan_programs(seen: Set[str]) -> List[Tuple[int, str, str]]:
+def scan_programs(seen: set[str]) -> list[tuple[int, str, str]]:
     """Scan programs for bonuses"""
-    alerts: List[Tuple[int, str, str]] = []
+    alerts: list[tuple[int, str, str]] = []
     sources = STORE.all() if STORE else []
 
     for source_url in sources:
@@ -730,7 +735,7 @@ def scan_programs(seen: Set[str]) -> List[Tuple[int, str, str]]:
 
 
 def parse_feed(
-    name: str, url: str, seen: Set[str], alerts: List[Tuple[int, str, str]]
+    name: str, url: str, seen: set[str], alerts: list[tuple[int, str, str]]
 ) -> None:
     """Parse feed content for bonus alerts"""
     content = fetch(url)
@@ -765,7 +770,7 @@ def parse_feed(
 async def run_scan() -> None:
     """Run the main scanning process"""
     print("Running mileage program scan...")
-    seen: Set[str] = set()
+    seen: set[str] = set()
     alerts = scan_programs(seen)
 
     if alerts:

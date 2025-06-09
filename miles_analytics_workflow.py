@@ -4,9 +4,10 @@ Miles Analytics Workflow - Demonstrates full MCP capabilities
 Combines database analytics, web automation, and data processing
 """
 
-import duckdb
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
+import duckdb
 
 
 def export_data_to_csv() -> str:
@@ -61,7 +62,7 @@ def export_data_to_csv() -> str:
     return usage_file, promo_file
 
 
-def analyze_performance_trends() -> Dict[str, Any]:
+def analyze_performance_trends() -> dict[str, Any]:
     """Analyze Miles bot performance trends."""
     print("📊 Analyzing performance trends...")
 
@@ -122,7 +123,7 @@ def analyze_performance_trends() -> Dict[str, Any]:
     return analysis
 
 
-def create_insights_report(analysis: Dict[str, Any]) -> str:
+def create_insights_report(analysis: dict[str, Any]) -> str:
     """Generate a comprehensive insights report."""
     print("📋 Creating insights report...")
 
@@ -240,7 +241,7 @@ def main():
         return True
 
     except Exception as e:
-        print(f"❌ Workflow failed: {str(e)}")
+        print(f"❌ Workflow failed: {e!s}")
         return False
 
 

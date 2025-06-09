@@ -1,5 +1,40 @@
 {
-    "recommendations": [
-        "rimuruchan.vscode-fix-checksums-next"
-    ]
+  "recommendations": [
+    // 🚀 Layer 1: Formatting & Style
+    "charliermarsh.ruff",              // Ruff - Ultra-fast Python linter & formatter
+    "ms-python.black-formatter",       // Black Formatter - Deterministic code style
+    
+    // 🧪 Layer 2: Static Analysis & Tests  
+    "ms-python.python",               // Python extension with IntelliSense & debugging
+    "ms-python.mypy-type-checker",    // MyPy - Static type checking
+    "littlefoxteam.vscode-python-test-adapter", // Test Explorer for Python
+    
+    // 🔧 Layer 3: CI & Workflow Validation
+    "redhat.vscode-yaml",             // YAML Language Support with schema validation
+    "github.vscode-github-actions",   // GitHub Actions - view logs, rerun, annotate
+    "ms-vscode.vscode-github-actions-yaml", // GitHub Actions YAML support
+    
+    // 🛡️ Security & Quality
+    "ms-python.flake8",               // Flake8 linting (backup)
+    "ms-vscode.vscode-pylance",       // Pylance - Fast, feature-rich language support
+    
+    // 🐳 Docker & Containers
+    "ms-vscode-remote.remote-containers", // Dev Containers
+    "ms-azuretools.vscode-docker",    // Docker extension
+    
+    // 📋 General Development  
+    "eamodio.gitlens",                // GitLens - Git visualization
+    "ms-vscode.vscode-json",          // JSON with schema validation
+    "editorconfig.editorconfig",      // EditorConfig - consistent coding styles
+    "streetsidesoftware.code-spell-checker", // Spell checker for code
+    
+    // 🎯 Miles-specific
+    "ms-python.debugpy",              // Python debugger
+    "tamasfe.even-better-toml",       // TOML language support for pyproject.toml
+    "bungcip.better-toml"             // Enhanced TOML support
+  ],
+  "unwantedRecommendations": [
+    "ms-python.pylint",               // We use Ruff instead
+    "ms-python.isort"                 // Ruff handles import sorting
+  ]
 }

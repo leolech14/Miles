@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Set
 
 import redis
 
@@ -32,7 +31,7 @@ class FileSeenStore(SeenStore):
         self.path = path
         try:
             with open(path) as f:
-                self._data: Set[str] = set(json.load(f))
+                self._data: set[str] = set(json.load(f))
         except FileNotFoundError:
             self._data = set()
 

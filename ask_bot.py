@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Telegram command bot to trigger manual scans."""
+
 from __future__ import annotations
 
-import os
-
 import asyncio
+import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+from openai import OpenAI
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -14,18 +18,13 @@ from telegram.ext import (
     filters,
 )
 
-from openai import OpenAI
-from miles.chat_store import ChatMemory
-
-from miles.scheduler import setup_scheduler, update_schedule, get_current_schedule
-from miles.schedule_config import ScheduleConfig
-from miles.source_search import update_sources
-from miles.ai_source_discovery import ai_update_sources
-from miles.source_store import SourceStore
-
 import miles.bonus_alert_bot as bot
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from miles.ai_source_discovery import ai_update_sources
+from miles.chat_store import ChatMemory
+from miles.schedule_config import ScheduleConfig
+from miles.scheduler import get_current_schedule, setup_scheduler, update_schedule
+from miles.source_search import update_sources
+from miles.source_store import SourceStore
 
 print("[ask_bot] Starting up...")
 print(f"[ask_bot] Python version: {__import__('sys').version}")
@@ -113,8 +112,8 @@ store = SourceStore()
 
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Run the scan and reply with any found promotions."""
-    from miles.metrics import telegram_commands_total, promos_found_total
-    from miles.rate_limiter import get_rate_limiter, RateLimitType, RateLimitExceeded
+    from miles.metrics import promos_found_total, telegram_commands_total
+    from miles.rate_limiter import RateLimitExceeded, RateLimitType, get_rate_limiter
 
     try:
         if not update.message or not update.effective_chat:
@@ -162,7 +161,7 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         telegram_commands_total.labels("ask", "error").inc()
         if update.message:
-            await update.message.reply_text(f"❌ Error during scan: {str(e)}")
+            await update.message.reply_text(f"❌ Error during scan: {e!s}")
         raise
 
 
@@ -176,10 +175,10 @@ async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
     if len(lst) > 50:
         extra = len(lst) - 50
         lst = lst[:50]
-        lines = [f"{i+1}. {u}" for i, u in enumerate(lst)]
+        lines = [f"{i + 1}. {u}" for i, u in enumerate(lst)]
         lines.append(f"… and {extra} more")
     else:
-        lines = [f"{i+1}. {u}" for i, u in enumerate(lst)]
+        lines = [f"{i + 1}. {u}" for i, u in enumerate(lst)]
     await update.message.reply_text("\n".join(lines))
 
 
@@ -222,7 +221,7 @@ async def handle_rmsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             await update.message.reply_text("Not found.")
     except Exception as e:
-        await update.message.reply_text(f"Error: {str(e)}")
+        await update.message.reply_text(f"Error: {e!s}")
 
 
 async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -253,7 +252,7 @@ async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    from miles.rate_limiter import get_rate_limiter, RateLimitType, RateLimitExceeded
+    from miles.rate_limiter import RateLimitExceeded, RateLimitType, get_rate_limiter
 
     # Check if OpenAI is available
     if not openai_client:
@@ -337,7 +336,7 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     except Exception as e:
-        await update.message.reply_text(f"❌ OpenAI API error: {str(e)}")
+        await update.message.reply_text(f"❌ OpenAI API error: {e!s}")
         return
 
 
@@ -535,7 +534,7 @@ async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
         for i, chunk in enumerate(chunks):
             await update.message.reply_text(
-                f"📋 **Sources Export (Part {i+1}/{len(chunks)})**\n\n{chunk}",
+                f"📋 **Sources Export (Part {i + 1}/{len(chunks)})**\n\n{chunk}",
                 parse_mode="Markdown",
             )
     else:
@@ -720,7 +719,7 @@ async def handle_image_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> N
             return
 
     except Exception as e:
-        await update.message.reply_text(f"❌ OpenAI API error: {str(e)}")
+        await update.message.reply_text(f"❌ OpenAI API error: {e!s}")
         return
 
     user_msgs.append({"role": "assistant", "content": reply})
@@ -773,7 +772,7 @@ async def handle_rate_limit_status(
     if not update.message or not update.effective_user:
         return
 
-    from miles.rate_limiter import get_rate_limiter, RateLimitType
+    from miles.rate_limiter import RateLimitType, get_rate_limiter
 
     user_id = str(update.effective_user.id)
     limiter = get_rate_limiter()
@@ -802,7 +801,7 @@ async def handle_rate_limit_status(
                 status_msg += f"  • Window: {window}s\n"
                 status_msg += f"  • Burst: {burst}\n\n"
         except Exception as e:
-            status_msg += f"❌ **{display_name}**: Error - {str(e)}\n\n"
+            status_msg += f"❌ **{display_name}**: Error - {e!s}\n\n"
 
     status_msg += "💡 *Rate limits prevent spam and ensure fair usage*"
 
@@ -885,8 +884,8 @@ When users ask you to do something, provide a detailed action plan and execute i
 
 📊 **Current Status:**
 • Sources monitored: {len(sources)}
-• OpenAI status: {'✅ Active' if openai_client else '❌ Inactive'}
-• Storage: {'Redis + File fallback' if os.getenv('REDIS_URL') else 'File only'}
+• OpenAI status: {"✅ Active" if openai_client else "❌ Inactive"}
+• Storage: {"Redis + File fallback" if os.getenv("REDIS_URL") else "File only"}
 
 🎯 **AI Recommendations:**
 {ai_response}
@@ -917,10 +916,10 @@ When users ask you to do something, provide a detailed action plan and execute i
             brain_analysis = f"""🧠 **Brain Scan Analysis:**
 
 📈 **Results:** {len(alerts)} promotions found
-🎯 **Quality:** {'High-value opportunities detected' if alerts else 'Market currently quiet'}
+🎯 **Quality:** {"High-value opportunities detected" if alerts else "Market currently quiet"}
 🔄 **Recommendation:** {ai_response}
 
-{'🚀 Alerts sent!' if alerts else '⏳ Continue monitoring'}"""
+{"🚀 Alerts sent!" if alerts else "⏳ Continue monitoring"}"""
             await update.message.reply_text(brain_analysis, parse_mode="Markdown")
 
         else:
@@ -930,7 +929,7 @@ When users ask you to do something, provide a detailed action plan and execute i
             )
 
     except Exception as e:
-        await update.message.reply_text(f"🧠❌ Brain error: {str(e)}")
+        await update.message.reply_text(f"🧠❌ Brain error: {e!s}")
 
 
 async def _post_init(app: object) -> None:
@@ -964,7 +963,8 @@ class HealthHandler(BaseHTTPRequestHandler):
 
     def _handle_metrics(self) -> None:
         try:
-            from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+            from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
             from miles.metrics import get_metrics_registry, record_memory_usage
 
             # Update dynamic metrics
@@ -981,7 +981,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.send_response(500)
             self.send_header("Content-Type", "text/plain")
             self.end_headers()
-            self.wfile.write(f"Error generating metrics: {str(e)}".encode())
+            self.wfile.write(f"Error generating metrics: {e!s}".encode())
 
 
 def start_health_server() -> None:

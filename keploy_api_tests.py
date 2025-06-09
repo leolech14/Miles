@@ -6,17 +6,18 @@ This script makes API calls to the Miles bot test server
 that Keploy can record and replay for automated testing.
 """
 
-import requests
-import time
 import json
-from typing import Dict, Any
+import time
+from typing import Any
+
+import requests
 
 BASE_URL = "http://localhost:8080"
 
 
 def make_request(
-    method: str, endpoint: str, data: Dict[str, Any] = None
-) -> Dict[str, Any]:
+    method: str, endpoint: str, data: dict[str, Any] = None
+) -> dict[str, Any]:
     """Make HTTP request and return JSON response"""
     url = f"{BASE_URL}{endpoint}"
 

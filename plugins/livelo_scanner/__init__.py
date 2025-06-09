@@ -1,8 +1,9 @@
 """Livelo Program Scanner Plugin."""
 
+import re
 from datetime import datetime
 from typing import List
-import re
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -27,7 +28,7 @@ class LiveloScannerPlugin:
             "https://mestredasmilhas.com/tag/livelo/",
         ]
 
-    def scrape(self, since: datetime) -> List[Promo]:
+    def scrape(self, since: datetime) -> list[Promo]:
         """Scan Livelo-related sources for bonus promotions."""
         promos = []
 
@@ -52,7 +53,7 @@ class LiveloScannerPlugin:
             print(f"[{self.name}] Failed to fetch {url}: {e}")
             return None
 
-    def _parse_livelo_content(self, content: str, source_url: str) -> List[Promo]:
+    def _parse_livelo_content(self, content: str, source_url: str) -> list[Promo]:
         """Parse content for Livelo bonus promotions."""
         promos = []
         soup = BeautifulSoup(content, "html.parser")

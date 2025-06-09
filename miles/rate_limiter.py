@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict, deque
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncIterator, Callable, Dict, Optional
+from typing import Any
 
 import redis
 
@@ -61,10 +62,10 @@ DEFAULT_LIMITS = {
 class RateLimiter:
     """Advanced rate limiter with Redis backend and fallback to in-memory."""
 
-    def __init__(self, redis_client: Optional[redis.Redis[str]] = None):
+    def __init__(self, redis_client: redis.Redis[str] | None = None):
         self.redis = redis_client
-        self.local_buckets: Dict[str, deque[float]] = defaultdict(lambda: deque())
-        self.local_burst_tokens: Dict[str, int] = defaultdict(int)
+        self.local_buckets: dict[str, deque[float]] = defaultdict(lambda: deque())
+        self.local_burst_tokens: dict[str, int] = defaultdict(int)
         self.limits = DEFAULT_LIMITS.copy()
 
     def set_limit(self, limit_type: RateLimitType, limit: RateLimit) -> None:
@@ -74,7 +75,7 @@ class RateLimiter:
 
     async def is_allowed(
         self, limit_type: RateLimitType, identifier: str = "global", cost: int = 1
-    ) -> tuple[bool, Dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check if request is allowed under rate limit.
 
@@ -103,7 +104,7 @@ class RateLimiter:
 
     async def _check_redis_limit(
         self, key: str, limit: RateLimit, cost: int
-    ) -> tuple[bool, Dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """Check rate limit using Redis sliding window."""
         try:
             current_time = time.time()
@@ -181,7 +182,7 @@ class RateLimiter:
 
     async def _check_local_limit(
         self, key: str, limit: RateLimit, cost: int
-    ) -> tuple[bool, Dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """Check rate limit using local in-memory storage."""
         current_time = time.time()
         window_start = current_time - limit.window
@@ -231,7 +232,7 @@ class RateLimiter:
     @asynccontextmanager
     async def limit(
         self, limit_type: RateLimitType, identifier: str = "global", cost: int = 1
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """Context manager for rate limiting."""
         allowed, metadata = await self.is_allowed(limit_type, identifier, cost)
 
@@ -250,7 +251,7 @@ class RateLimiter:
 
     async def get_stats(
         self, limit_type: RateLimitType, identifier: str = "global"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get current rate limit statistics."""
         limit = self.limits.get(limit_type)
         if not limit:
@@ -274,14 +275,14 @@ class RateLimiter:
 class RateLimitExceeded(Exception):
     """Exception raised when rate limit is exceeded."""
 
-    def __init__(self, message: str, retry_after: int, metadata: Dict[str, Any]):
+    def __init__(self, message: str, retry_after: int, metadata: dict[str, Any]):
         super().__init__(message)
         self.retry_after = retry_after
         self.metadata = metadata
 
 
 # Global rate limiter instance
-_rate_limiter: Optional[RateLimiter] = None
+_rate_limiter: RateLimiter | None = None
 
 
 def get_rate_limiter() -> RateLimiter:
@@ -290,6 +291,7 @@ def get_rate_limiter() -> RateLimiter:
     if _rate_limiter is None:
         try:
             import os
+
             import redis
 
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -307,7 +309,7 @@ def get_rate_limiter() -> RateLimiter:
 
 
 # Convenience decorators
-def rate_limit(limit_type: RateLimitType, identifier_func: Optional[Callable] = None):
+def rate_limit(limit_type: RateLimitType, identifier_func: Callable | None = None):
     """Decorator for rate limiting functions."""
 
     def decorator(func: Callable) -> Callable:

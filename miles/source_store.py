@@ -1,16 +1,16 @@
+import logging
 import os
+import sys
+
 import redis
 import yaml
-import logging
-from typing import List, Optional
-import sys
 
 
 class SourceStore:
     def __init__(self, yaml_path: str = "sources.yaml"):
         self.yaml_path = yaml_path
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        self.r: Optional[redis.Redis[str]] = None
+        self.r: redis.Redis[str] | None = None
         if url == "not_set":
             print(
                 "[source_store] Redis URL not configured, using file storage only",
@@ -31,7 +31,7 @@ class SourceStore:
             return
         try:
             with open(self.yaml_path) as f:
-                data: List[str] = yaml.safe_load(f) or []
+                data: list[str] = yaml.safe_load(f) or []
         except FileNotFoundError:
             data = []
         if data:
@@ -42,21 +42,21 @@ class SourceStore:
             yaml.safe_dump(sorted(self.all()), f)
 
     # public API ---------------------------------------------------------
-    def all(self) -> List[str]:
+    def all(self) -> list[str]:
         if not self.r:
             # Fall back to reading from YAML file when Redis is not available
             try:
                 with open(self.yaml_path) as f:
-                    data: List[str] = yaml.safe_load(f) or []
+                    data: list[str] = yaml.safe_load(f) or []
                 return sorted(data)
             except FileNotFoundError:
                 return []
         try:
             from miles.metrics import (
+                count_operation,
                 redis_operations_total,
                 redis_response_duration,
                 time_operation,
-                count_operation,
             )
 
             with time_operation(redis_response_duration, "smembers"):

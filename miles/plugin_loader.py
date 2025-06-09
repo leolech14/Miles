@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from importlib.metadata import entry_points
-from typing import Dict, List, Any, Type
+from typing import Any
 
 from apscheduler.schedulers.base import BaseScheduler
 
@@ -23,23 +23,23 @@ def _enabled_set() -> set[str] | None:
     return {part.strip() for part in raw.split(",") if part.strip()}
 
 
-def discover_plugins() -> Dict[str, Plugin]:
+def discover_plugins() -> dict[str, Plugin]:
     """Import & instantiate all enabled plug-ins."""
     enabled = _enabled_set()
-    found: Dict[str, Plugin] = {}
+    found: dict[str, Plugin] = {}
 
     for ep in entry_points(group=_GROUP):
         if enabled is not None and ep.name not in enabled:
             continue
         try:
-            plugin_cls: Type[Plugin] | None = ep.load()
+            plugin_cls: type[Plugin] | None = ep.load()
             if plugin_cls is None:
                 logger.error("Plugin class not defined for %s", ep.name)
                 continue
             plugin: Plugin = plugin_cls()
             found[plugin.name] = plugin
             logger.info("Loaded plug-in: %s", plugin.name)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Failed to load plug-in %s", ep.name)
 
     return found
@@ -56,7 +56,7 @@ def register_with_scheduler(scheduler: BaseScheduler) -> None:
 
         async def _runner(plg: Plugin = plugin) -> None:  # default-arg trick
             try:
-                promos: List[Promo] = await _maybe_async(plg.scrape, now)
+                promos: list[Promo] = await _maybe_async(plg.scrape, now)
                 logger.info("Plug-in %s produced %d promos", plg.name, len(promos))
 
                 # Process promos through storage and notification system
@@ -65,7 +65,7 @@ def register_with_scheduler(scheduler: BaseScheduler) -> None:
 
                     process_plugin_promos(promos)
 
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.exception("Plug-in %s execution failed", plg.name)
 
         scheduler.add_job(

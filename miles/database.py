@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 import asyncpg
 from sqlalchemy import MetaData
@@ -37,9 +37,9 @@ class DatabaseManager:
     """Manages PostgreSQL database connections and sessions."""
 
     def __init__(self) -> None:
-        self.engine: Optional[AsyncEngine] = None
-        self.session_factory: Optional[async_sessionmaker[AsyncSession]] = None
-        self._url: Optional[str] = None
+        self.engine: AsyncEngine | None = None
+        self.session_factory: async_sessionmaker[AsyncSession] | None = None
+        self._url: str | None = None
 
     def get_database_url(self) -> str:
         """Get database URL from environment variables."""
@@ -208,10 +208,10 @@ from sqlalchemy import text  # noqa: E402
 __all__ = [
     "Base",
     "DatabaseManager",
+    "close_database",
+    "create_database_if_not_exists",
     "db_manager",
     "get_db_session",
-    "init_database",
-    "close_database",
     "get_raw_connection",
-    "create_database_if_not_exists",
+    "init_database",
 ]

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import List
-from urllib.parse import urlparse, parse_qs, unquote, quote_plus
+from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -24,7 +24,7 @@ class SourceDiscoveryPlugin:
         }
         self.query = "transferencia de pontos bonus milhas"
 
-    def scrape(self, since: datetime) -> List[Promo]:
+    def scrape(self, since: datetime) -> list[Promo]:
         """Discover new mileage sources and add them to the store."""
         try:
             new_sources = self._search_new_sources()
@@ -51,7 +51,7 @@ class SourceDiscoveryPlugin:
             print(f"[{self.name}] Error during source discovery: {e}")
             return []
 
-    def _search_new_sources(self) -> List[str]:
+    def _search_new_sources(self) -> list[str]:
         """Search for new sources using DuckDuckGo."""
         url = f"https://duckduckgo.com/html/?q={quote_plus(self.query)}"
         try:
@@ -60,10 +60,10 @@ class SourceDiscoveryPlugin:
         except Exception:
             return []
 
-    def _extract_urls(self, html: str) -> List[str]:
+    def _extract_urls(self, html: str) -> list[str]:
         """Extract URLs from search results."""
         soup = BeautifulSoup(html, "html.parser")
-        urls: List[str] = []
+        urls: list[str] = []
 
         for a in soup.find_all("a", href=True):
             if isinstance(a, Tag):
@@ -81,12 +81,12 @@ class SourceDiscoveryPlugin:
                         urls.append(url)
         return urls
 
-    def _update_source_store(self, search_results: List[str]) -> List[str]:
+    def _update_source_store(self, search_results: list[str]) -> list[str]:
         """Update source store with new relevant sources."""
         store = SourceStore()
         current = store.all()
         existing = set(current)
-        found: List[str] = []
+        found: list[str] = []
 
         print(
             f"[{self.name}] Found {len(search_results)} potential sources from search"

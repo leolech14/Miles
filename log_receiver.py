@@ -3,11 +3,10 @@
 
 import json
 from pathlib import Path
-from typing import Dict
 
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import uvicorn
 
 
 class LogPayload(BaseModel):
@@ -20,7 +19,7 @@ app = FastAPI(title="CI Log Receiver", version="1.0.0")
 
 
 @app.post("/")
-async def receive_log(payload: LogPayload) -> Dict[str, str]:
+async def receive_log(payload: LogPayload) -> dict[str, str]:
     """Receive and store CI step logs."""
     try:
         # Print one-line summary
@@ -47,7 +46,7 @@ async def receive_log(payload: LogPayload) -> Dict[str, str]:
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy"}
 

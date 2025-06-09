@@ -2,17 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Dict, Optional
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from zoneinfo import ZoneInfo
 
-from miles.logging_config import setup_logging
-from miles.schedule_config import ScheduleConfig
-from miles.source_search import update_sources
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 from miles.ai_source_discovery import ai_update_sources
 from miles.bonus_alert_bot import run_scan
+from miles.logging_config import setup_logging
 from miles.plugin_loader import register_with_scheduler
+from miles.schedule_config import ScheduleConfig
+from miles.source_search import update_sources
 
 """
 AsyncIO-based cron scheduler.  Import `setup_scheduler()` during application
@@ -23,7 +22,7 @@ setup_logging()
 logger = logging.getLogger("miles.scheduler")
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-_scheduler: Optional[AsyncIOScheduler] = None
+_scheduler: AsyncIOScheduler | None = None
 
 
 def setup_scheduler() -> None:
@@ -92,7 +91,7 @@ def update_schedule() -> bool:
         return False
 
 
-def get_current_schedule() -> Dict[str, object]:
+def get_current_schedule() -> dict[str, object]:
     """Get current schedule configuration"""
     return ScheduleConfig().get_config()
 

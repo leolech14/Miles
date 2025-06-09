@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 from sqlalchemy import (
     ARRAY,
@@ -35,12 +35,12 @@ class Promotion(Base):
     )
     program: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     bonus_percentage: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     source_url: Mapped[str] = mapped_column(Text, nullable=False)
     source_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    title: Mapped[Optional[str]] = mapped_column(Text)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    title: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     discovered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
@@ -49,7 +49,7 @@ class Promotion(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
     # Relationships
-    notifications: Mapped[List["Notification"]] = relationship(
+    notifications: Mapped[list[Notification]] = relationship(
         "Notification", back_populates="promotion"
     )
 
@@ -72,28 +72,28 @@ class Source(Base):
     )
     url: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     domain: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    name: Mapped[Optional[str]] = mapped_column(String(200))
+    name: Mapped[str | None] = mapped_column(String(200))
     added_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    last_checked: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    last_successful_check: Mapped[Optional[datetime]] = mapped_column(
+    last_checked: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_successful_check: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True)
     )
     success_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=100.00)
-    avg_response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)
+    avg_response_time_ms: Mapped[int | None] = mapped_column(Integer)
     total_checks: Mapped[int] = mapped_column(Integer, default=0)
     successful_checks: Mapped[int] = mapped_column(Integer, default=0)
     promotions_found: Mapped[int] = mapped_column(Integer, default=0)
     quality_score: Mapped[float] = mapped_column(Numeric(3, 2), default=5.0, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     check_frequency_minutes: Mapped[int] = mapped_column(Integer, default=60)
-    plugin_config: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
-    last_error_message: Mapped[Optional[str]] = mapped_column(Text)
+    plugin_config: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    last_error_message: Mapped[str | None] = mapped_column(Text)
     consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
-    metrics: Mapped[List["SourceMetric"]] = relationship(
+    metrics: Mapped[list[SourceMetric]] = relationship(
         "SourceMetric", back_populates="source"
     )
 
@@ -104,17 +104,17 @@ class User(Base):
     __tablename__ = "users"
 
     telegram_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[Optional[str]] = mapped_column(String(100))
-    first_name: Mapped[Optional[str]] = mapped_column(String(100))
+    username: Mapped[str | None] = mapped_column(String(100))
+    first_name: Mapped[str | None] = mapped_column(String(100))
     language_code: Mapped[str] = mapped_column(String(10), default="pt")
 
     # Preferences
-    preferred_programs: Mapped[List[str]] = mapped_column(
+    preferred_programs: Mapped[list[str]] = mapped_column(
         ARRAY(String), default=list, server_default="{}"
     )
     min_bonus_threshold: Mapped[int] = mapped_column(Integer, default=80)
     max_notifications_per_day: Mapped[int] = mapped_column(Integer, default=10)
-    notification_hours: Mapped[List[int]] = mapped_column(
+    notification_hours: Mapped[list[int]] = mapped_column(
         ARRAY(Integer), default=[8, 12, 18], server_default="{8,12,18}"
     )
     timezone: Mapped[str] = mapped_column(String(50), default="America/Sao_Paulo")
@@ -147,7 +147,7 @@ class User(Base):
     ai_max_tokens: Mapped[int] = mapped_column(Integer, default=1000)
 
     # Relationships
-    notifications: Mapped[List["Notification"]] = relationship(
+    notifications: Mapped[list[Notification]] = relationship(
         "Notification", back_populates="user"
     )
 
@@ -172,7 +172,7 @@ class Notification(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    promotion_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    promotion_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True
     )
 
@@ -185,19 +185,19 @@ class Notification(Base):
         DateTime(timezone=True), server_default=func.now(), index=True
     )
     delivered: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
-    delivery_error: Mapped[Optional[str]] = mapped_column(Text)
+    delivery_error: Mapped[str | None] = mapped_column(Text)
 
     # User interaction
-    viewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    action_taken: Mapped[Optional[str]] = mapped_column(String(20))
+    viewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    action_taken: Mapped[str | None] = mapped_column(String(20))
 
     # Metadata
     channel: Mapped[str] = mapped_column(String(20), default="telegram")
     priority: Mapped[int] = mapped_column(Integer, default=5)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="notifications")
-    promotion: Mapped[Optional["Promotion"]] = relationship(
+    user: Mapped[User] = relationship("User", back_populates="notifications")
+    promotion: Mapped[Promotion | None] = relationship(
         "Promotion", back_populates="notifications"
     )
 
@@ -223,21 +223,21 @@ class SourceMetric(Base):
     check_timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
-    response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)
-    status_code: Mapped[Optional[int]] = mapped_column(Integer)
-    content_length: Mapped[Optional[int]] = mapped_column(Integer)
+    response_time_ms: Mapped[int | None] = mapped_column(Integer)
+    status_code: Mapped[int | None] = mapped_column(Integer)
+    content_length: Mapped[int | None] = mapped_column(Integer)
     promotions_found: Mapped[int] = mapped_column(Integer, default=0)
 
     # Quality indicators
-    content_hash: Mapped[Optional[str]] = mapped_column(String(64))
+    content_hash: Mapped[str | None] = mapped_column(String(64))
     parsing_errors: Mapped[int] = mapped_column(Integer, default=0)
 
     # Metadata
-    user_agent: Mapped[Optional[str]] = mapped_column(String(200))
-    plugin_name: Mapped[Optional[str]] = mapped_column(String(100))
+    user_agent: Mapped[str | None] = mapped_column(String(200))
+    plugin_name: Mapped[str | None] = mapped_column(String(100))
 
     # Relationships
-    source: Mapped["Source"] = relationship("Source", back_populates="metrics")
+    source: Mapped[Source] = relationship("Source", back_populates="metrics")
 
 
 class BonusPrediction(Base):
@@ -251,7 +251,7 @@ class BonusPrediction(Base):
     program: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
     # Prediction details
-    predicted_bonus_range: Mapped[List[int]] = mapped_column(
+    predicted_bonus_range: Mapped[list[int]] = mapped_column(
         ARRAY(Integer), nullable=False
     )
     prediction_confidence: Mapped[float] = mapped_column(Numeric(3, 2))
@@ -261,17 +261,17 @@ class BonusPrediction(Base):
     prediction_window_days: Mapped[int] = mapped_column(Integer, default=7)
 
     # Model information
-    model_version: Mapped[Optional[str]] = mapped_column(String(20))
-    model_features: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
+    model_version: Mapped[str | None] = mapped_column(String(20))
+    model_features: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
     # Verification
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    actual_bonus: Mapped[Optional[int]] = mapped_column(Integer)
-    actual_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    prediction_accuracy: Mapped[Optional[float]] = mapped_column(Numeric(3, 2))
-    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    actual_bonus: Mapped[int | None] = mapped_column(Integer)
+    actual_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    prediction_accuracy: Mapped[float | None] = mapped_column(Numeric(3, 2))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Constraints
     __table_args__ = (

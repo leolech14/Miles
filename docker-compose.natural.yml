@@ -1,0 +1,121 @@
+version: "3.9"
+
+services:
+  natural-language-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.natural
+    environment:
+      # Required
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Database connections
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/miles
+      
+      # AI Configuration (optimized for natural language)
+      - OPENAI_MODEL=gpt-4o
+      - OPENAI_TEMPERATURE=0.7
+      - OPENAI_MAX_TOKENS=2000
+      - CONVERSATION_TIMEOUT=1800
+      
+      # Enhanced features
+      - ENABLE_PROACTIVE_SUGGESTIONS=true
+      - ENABLE_PERFORMANCE_INSIGHTS=true
+      - ENABLE_MULTIMODAL=true
+      - ENABLE_FUNCTION_EXPLANATIONS=true
+      
+      # Rate limiting (generous for conversation)
+      - RATE_LIMIT_MESSAGES=30
+      - RATE_LIMIT_FUNCTIONS=20
+      - RATE_LIMIT_OPENAI=60
+      
+      # Bot settings
+      - MIN_BONUS=${MIN_BONUS:-80}
+      - METRICS_ENABLED=true
+      - LOG_WEBHOOK_URL=${LOG_WEBHOOK_URL:-}
+      
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    ports:
+      - "8080:8080"  # Health check endpoint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./sources.yaml:/app/sources.yaml:ro
+      - bot_data:/app/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=miles
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Optional: Metrics and monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Optional: Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  bot_data:
+
+networks:
+  default:
+    name: miles_natural_language

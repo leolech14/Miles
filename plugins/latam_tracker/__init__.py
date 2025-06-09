@@ -1,8 +1,9 @@
 """LATAM Pass Tracker Plugin."""
 
+import re
 from datetime import datetime
 from typing import List
-import re
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -27,7 +28,7 @@ class LatamTrackerPlugin:
             "https://pontospravoar.com/tag/latam/",
         ]
 
-    def scrape(self, since: datetime) -> List[Promo]:
+    def scrape(self, since: datetime) -> list[Promo]:
         """Scan LATAM-related sources for bonus promotions."""
         promos = []
 
@@ -52,7 +53,7 @@ class LatamTrackerPlugin:
             print(f"[{self.name}] Failed to fetch {url}: {e}")
             return None
 
-    def _parse_latam_content(self, content: str, source_url: str) -> List[Promo]:
+    def _parse_latam_content(self, content: str, source_url: str) -> list[Promo]:
         """Parse content for LATAM bonus promotions."""
         promos = []
         soup = BeautifulSoup(content, "html.parser")
