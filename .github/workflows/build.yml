@@ -135,8 +135,8 @@ jobs:
         id: prep
         run: |
           REPO_LOWER=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
-          echo "image=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "image-latest=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:latest" >> $GITHUB_OUTPUT
+          echo "image=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "image-latest=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:latest" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -189,8 +189,8 @@ jobs:
         id: prep
         run: |
           REPO_LOWER=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
-          echo "image=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:natural-${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "image-latest=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:natural-latest" >> $GITHUB_OUTPUT
+          echo "image=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:natural-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "image-latest=ghcr.io/${{ github.repository_owner }}/${REPO_LOWER}:natural-latest" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Natural Language Docker image
         uses: docker/build-push-action@v6
