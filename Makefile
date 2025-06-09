@@ -78,7 +78,7 @@ test-natural: ## Test natural language bot functionality
 layer1: ## Run Layer 1: Formatting & Style only
 	python scripts/quality_gates.py --layer 1
 
-layer2: ## Run Layer 2: Static Analysis & Tests only  
+layer2: ## Run Layer 2: Static Analysis & Tests only
 	python scripts/quality_gates.py --layer 2
 
 layer3: ## Run Layer 3: CI & Workflow Validation only

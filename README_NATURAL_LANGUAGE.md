@@ -11,7 +11,7 @@ Miles has been transformed from a command-based bot into an intelligent conversa
 User: /ask
 Bot:  🔍 Scanning for promotions...
 
-User: /sources  
+User: /sources
 Bot:  1. https://site1.com
       2. https://site2.com
 ```
@@ -19,18 +19,18 @@ Bot:  1. https://site1.com
 ### **After (Natural Language)**
 ```
 User: Are there any good bonuses today?
-AI:   Let me scan all sources for you! 🔍 
+AI:   Let me scan all sources for you! 🔍
       *scanning...*
       Found 3 great bonuses:
       🎯 Livelo 120% to Smiles (ends tonight!)
-      🎯 Itaú 100% to Azul (valid until Friday)  
+      🎯 Itaú 100% to Azul (valid until Friday)
       🎯 C6 Bank 90% to LATAM (new promotion!)
-      
+
       Would you like me to set up alerts for bonuses above 100%?
 
 User: Show me my monitored websites
-AI:   You're currently monitoring 15 Brazilian mileage sources 
-      including Melhores Destinos, Passageiro de Primeira, and 
+AI:   You're currently monitoring 15 Brazilian mileage sources
+      including Melhores Destinos, Passageiro de Primeira, and
       others. Here's the full list with performance stats...
 ```
 
@@ -113,27 +113,27 @@ Send images of promotions, websites, or mileage program pages:
 flowchart TB
     %% User Interface
     USER[User Message<br/>"Find good bonuses"] --> TG[Telegram Bot]
-    
+
     %% AI Processing Layer
     TG --> OPENAI[OpenAI GPT-4o<br/>Function Calling]
     OPENAI <--> CONTEXT[Context Manager<br/>Conversation + Bot State]
     OPENAI <--> FUNCTIONS[Function Registry<br/>13 Bot Operations]
-    
+
     %% Action Execution
     FUNCTIONS --> SCAN[Scan Promotions]
     FUNCTIONS --> SOURCES[Manage Sources]
     FUNCTIONS --> CONFIG[Configuration]
     FUNCTIONS --> SCHEDULE[Scheduling]
-    
+
     %% Existing Infrastructure (Reused)
     SCAN --> CORE[Core Engine<br/>Plugin System]
     SOURCES --> CORE
     CONFIG --> CORE
     SCHEDULE --> CORE
-    
+
     CORE --> STORAGE[Redis + PostgreSQL<br/>+ File Fallback]
     CORE --> MONITORING[Metrics + Health]
-    
+
     %% Response Flow
     OPENAI --> TG
     TG --> USER
@@ -190,7 +190,7 @@ The bot understands these natural language intents through OpenAI function calli
 ```bash
 # Required
 TELEGRAM_BOT_TOKEN=your_bot_token
-TELEGRAM_CHAT_ID=your_chat_id  
+TELEGRAM_CHAT_ID=your_chat_id
 OPENAI_API_KEY=sk-proj-your_key
 
 # AI Configuration (optimized for conversation)
@@ -237,7 +237,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    
+
   postgres:
     image: postgres:15-alpine
     environment:
@@ -306,7 +306,7 @@ python scripts/migrate_to_natural_language.py
 
 This script:
 - ✅ Validates your environment
-- ✅ Tests OpenAI connectivity  
+- ✅ Tests OpenAI connectivity
 - ✅ Verifies function registry
 - ✅ Provides deployment guidance
 - ✅ Shows example conversations
@@ -372,7 +372,7 @@ docker-compose.natural.yml    # Full stack deployment
 - [ ] Custom AI personalities
 - [ ] Integration with more mileage programs
 
-### **Medium Term**  
+### **Medium Term**
 - [ ] Predictive bonus forecasting
 - [ ] Multi-language support
 - [ ] Advanced analytics dashboard

@@ -1,19 +1,12 @@
 {
-  // 🚀 Layer 1: Formatting & Style Configuration
   "python.defaultInterpreterPath": "./venv/bin/python",
   "python.terminal.activateEnvironment": true,
-  
-  // Ruff Configuration (Primary linter + formatter)
   "ruff.enable": true,
   "ruff.organizeImports": true,
   "ruff.fixAll": true,
   "ruff.showNotifications": "always",
-  
-  // Black Configuration (Backup formatter)
   "python.formatting.provider": "black",
   "black-formatter.args": ["--line-length=88"],
-  
-  // Editor behavior for quality gates
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.codeActionsOnSave": {
@@ -21,8 +14,6 @@
     "source.organizeImports.ruff": "explicit",
     "source.fixAll": "explicit"
   },
-  
-  // 🧪 Layer 2: Static Analysis & Testing
   "python.linting.enabled": true,
   "python.linting.mypyEnabled": true,
   "python.linting.mypyArgs": [
@@ -31,8 +22,6 @@
     "--follow-imports=silent",
     "--show-column-numbers"
   ],
-  
-  // Python testing configuration
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "python.testing.pytestArgs": [
@@ -41,8 +30,6 @@
     "--strict-markers"
   ],
   "python.testing.autoTestDiscoverOnSaveEnabled": false,
-  
-  // 🔧 Layer 3: GitHub Actions & YAML
   "github-actions.workflows.pinned": [".github/workflows"],
   "yaml.schemas": {
     "https://json.schemastore.org/github-workflow.json": "/.github/workflows/*.yml",
@@ -52,28 +39,20 @@
   "yaml.validate": true,
   "yaml.hover": true,
   "yaml.completion": true,
-  
-  // File associations
   "files.associations": {
     "*.yml": "yaml",
     "*.yaml": "yaml",
     "Dockerfile*": "dockerfile",
     ".env*": "properties"
   },
-  
-  // 🛡️ Security & Quality
   "python.linting.banditEnabled": true,
   "python.linting.banditArgs": ["-ll"],
-  
-  // Editor display settings
-  "editor.rulers": [88],  // Black line length
+  "editor.rulers": [88],
   "editor.tabSize": 4,
   "editor.insertSpaces": true,
   "editor.trimAutoWhitespace": true,
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
-  
-  // File exclusions for better performance
   "files.exclude": {
     "**/__pycache__": true,
     "**/.pytest_cache": true,
@@ -86,8 +65,6 @@
     "**/.venv": true,
     "**/venv": true
   },
-  
-  // Search exclusions
   "search.exclude": {
     "**/__pycache__": true,
     "**/.pytest_cache": true,
@@ -100,11 +77,7 @@
     "**/test-results": true,
     "**/tests/cassettes": true
   },
-  
-  // Recommended extensions notification
   "extensions.showRecommendationsOnlyOnDemand": false,
-  
-  // Terminal configuration
   "terminal.integrated.env.osx": {
     "PYTHONPATH": "${workspaceFolder}"
   },

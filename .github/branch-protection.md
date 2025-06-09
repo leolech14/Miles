@@ -7,7 +7,7 @@ We use a **simplified GitHub Flow** with `main` as the single source of truth:
 ### Branch Protection Rules for `main`:
 - ✅ Require pull request reviews before merging
 - ✅ Require status checks to pass before merging
-  - ✅ CI (pytest, mypy, ruff)  
+  - ✅ CI (pytest, mypy, ruff)
   - ✅ Build
 - ✅ Require branches to be up to date before merging
 - ✅ Require linear history (rebase and merge)
@@ -25,7 +25,7 @@ feature/new-feature → main (production)
 
 ### Development Process:
 1. **Feature Development**: Create `feature/*` branches from `main`
-2. **Pull Request**: `feature/*` → `main` 
+2. **Pull Request**: `feature/*` → `main`
 3. **Auto-Deploy**: Merging to `main` triggers Fly.io deployment
 4. **Hotfixes**: `hotfix/*` → `main` (for urgent fixes)
 

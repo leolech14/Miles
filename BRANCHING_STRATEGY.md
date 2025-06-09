@@ -62,7 +62,7 @@ git push origin feature/amazing-new-feature
 <type>: <description>
 
 feat: add Prometheus metrics endpoint
-fix: resolve rate limiting edge case  
+fix: resolve rate limiting edge case
 docs: update API documentation
 chore: clean up old dependencies
 security: patch OpenAI API key validation
@@ -74,7 +74,7 @@ security: patch OpenAI API key validation
 ```bash
 # For critical production issues:
 git checkout main
-git pull origin main  
+git pull origin main
 git checkout -b hotfix/critical-security-fix
 
 # Make minimal fix
@@ -117,7 +117,7 @@ git push origin main
 ### Status Checks
 All PRs must pass:
 1. `pytest` - Test suite
-2. `mypy --strict` - Type checking  
+2. `mypy --strict` - Type checking
 3. `ruff check` - Code linting
 4. `black --check` - Code formatting
 5. `trivy` - Security scanning
@@ -131,7 +131,7 @@ All PRs must pass:
 - Include tests with new features
 - Update documentation as needed
 
-### For Reviewers  
+### For Reviewers
 - Check code quality and security
 - Verify tests cover new functionality
 - Ensure documentation is updated

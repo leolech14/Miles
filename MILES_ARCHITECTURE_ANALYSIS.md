@@ -45,18 +45,18 @@
 
 ### **Enhanced Capabilities Integration**
 
-#### 1. **🗄️ Advanced Analytics Layer** 
+#### 1. **🗄️ Advanced Analytics Layer**
 ```mermaid
 graph TD
     A[Telegram Bot] --> B[Analytics Engine]
     B --> C[DuckDB Analytics]
     B --> D[PostgreSQL Storage]
     B --> E[Real-time Dashboards]
-    
+
     C --> F[Performance Trends]
     C --> G[Promotion Patterns]
     C --> H[User Behavior]
-    
+
     D --> I[Historical Data]
     D --> J[ML Training Sets]
     D --> K[Audit Logs]
@@ -74,7 +74,7 @@ graph TD
     B --> C[Visual Validation]
     B --> D[Content Extraction]
     B --> E[Quality Assessment]
-    
+
     C --> F[Screenshot Archive]
     D --> G[Structured Data]
     E --> H[Source Scoring]
@@ -91,7 +91,7 @@ graph TD
     A[AI Brain] --> B[Predictive Analytics]
     A --> C[Auto-optimization]
     A --> D[Anomaly Detection]
-    
+
     B --> E[Promotion Forecasting]
     C --> F[Source Management]
     D --> G[Alert Quality]
@@ -110,20 +110,20 @@ graph TD
 def enhanced_promotion_workflow():
     # 1. Web Intelligence Scanning
     playwright_results = web_intelligence.scan_with_visual_validation()
-    
+
     # 2. AI-Powered Analysis
     ai_scored_promotions = ai_operations.analyze_and_score(playwright_results)
-    
+
     # 3. Advanced Storage
     duckdb_analytics.store_realtime_metrics(ai_scored_promotions)
     postgresql_storage.persist_historical_data(ai_scored_promotions)
-    
+
     # 4. Intelligent Alerting
     alerts = prediction_engine.filter_high_value_promotions(ai_scored_promotions)
-    
+
     # 5. User Delivery
     telegram_interface.deliver_personalized_alerts(alerts)
-    
+
     # 6. Performance Tracking
     analytics_engine.record_workflow_metrics()
 ```

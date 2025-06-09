@@ -2,7 +2,7 @@
 
 **Purpose** – Build a modular, open-source system that watches Brazilian loyalty
 programs, detects transfer-bonus promos and cheap award fares, predicts upcoming
-bonus windows, and notifies users via Telegram (plus a minimal web UI).  
+bonus windows, and notifies users via Telegram (plus a minimal web UI).
 All heavy lifting can run in a single Docker container, scales horizontally if
 needed, and is easily extended via plug-in folders.
 
@@ -41,8 +41,8 @@ miles-bot/
 ```
 
 ### Core vs Plug-ins
-* `core/` owns the database, scheduler & bot glue.  
-* `plugins/` implement one capability (scrape source, analyse, alert).  
+* `core/` owns the database, scheduler & bot glue.
+* `plugins/` implement one capability (scrape source, analyse, alert).
   They declare themselves through Python entry-points so they can be hot-swapped
   without editing core.
 
@@ -110,10 +110,10 @@ Aux tables: `User`, `UserRoute`, `UserConfig`, `MetricLog`.
 ---
 
 ## 5  Scheduler & Job Flow
-1. Every minute – APScheduler checks due jobs (cron from plug-ins).  
-2. Executes `plugin.scrape()`.  
-3. De-duplicates via `hash(program + bonus_pct + start_dt)`.  
-4. Stores new promos; publishes `promo_created` on Redis.  
+1. Every minute – APScheduler checks due jobs (cron from plug-ins).
+2. Executes `plugin.scrape()`.
+3. De-duplicates via `hash(program + bonus_pct + start_dt)`.
+4. Stores new promos; publishes `promo_created` on Redis.
 5. `notifier` listens, scores promo, sends Telegram if score ≥ user threshold.
 
 ---
@@ -143,9 +143,9 @@ Collectors → Parser → Scorer → Deduplicator → Notifier
 ---
 
 ## 8  Historical Pattern Miner
-Nightly job `pattern_miner.py`  
-* Fit Bayesian Poisson on gap-days per program.  
-* Store `next_7d_prob`, `next_30d_prob`, `typical_bonus` in `promo_forecast`.  
+Nightly job `pattern_miner.py`
+* Fit Bayesian Poisson on gap-days per program.
+* Store `next_7d_prob`, `next_30d_prob`, `typical_bonus` in `promo_forecast`.
 * `/forecast` & webapp read this table.
 
 ---
@@ -177,7 +177,7 @@ Tests use VCR.py; Ruff & MyPy enforce style.
 ---
 
 ## 11  CI/CD Pipeline (GitHub Actions)
-* test → build → push → deploy (Fly.io).  
+* test → build → push → deploy (Fly.io).
 Secrets (`FLY_API_TOKEN`, etc.) injected in repo settings.
 
 ---
@@ -197,26 +197,26 @@ Grafana board JSON lives in `docs/grafana.json`.
 ---
 
 ## 13  Extending & Contributing
-1. Fork → create `plugins/<your_plugin>/`.  
-2. Implement `Plugin` class.  
-3. Add VCR fixture under `tests/`.  
-4. Register entry-point in `pyproject.toml`.  
-5. Update `.env` `PLUGINS_ENABLED`.  
+1. Fork → create `plugins/<your_plugin>/`.
+2. Implement `Plugin` class.
+3. Add VCR fixture under `tests/`.
+4. Register entry-point in `pyproject.toml`.
+5. Update `.env` `PLUGINS_ENABLED`.
 Core code is frozen; only plug-ins evolve.
 
 ---
 
 ## 14  Roadmap Ideas
-* Wallet balances plug-in – auto-track point expiries.  
-* Seat-map scraper – alert when a premium seat opens.  
-* WhatsApp listener – ingest rumours, quarantine until verified.  
+* Wallet balances plug-in – auto-track point expiries.
+* Seat-map scraper – alert when a premium seat opens.
+* WhatsApp listener – ingest rumours, quarantine until verified.
 * LLM summariser – weekly digest of missed promos & forecasts.
 
 ---
 
 ## 15  License & Credits
 Apache 2.0. Inspired by Smiles Helper, Buscador Smiles, and the mileage-hacker
-community.  
+community.
 “Open, modular, relentlessly automated.” Drop your plug-in folder, commit, and
 watch your Telegram light up 🚀
 ```

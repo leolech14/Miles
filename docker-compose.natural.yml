@@ -10,33 +10,33 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      
+
       # Database connections
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/miles
-      
+
       # AI Configuration (optimized for natural language)
       - OPENAI_MODEL=gpt-4o
       - OPENAI_TEMPERATURE=0.7
       - OPENAI_MAX_TOKENS=2000
       - CONVERSATION_TIMEOUT=1800
-      
+
       # Enhanced features
       - ENABLE_PROACTIVE_SUGGESTIONS=true
       - ENABLE_PERFORMANCE_INSIGHTS=true
       - ENABLE_MULTIMODAL=true
       - ENABLE_FUNCTION_EXPLANATIONS=true
-      
+
       # Rate limiting (generous for conversation)
       - RATE_LIMIT_MESSAGES=30
       - RATE_LIMIT_FUNCTIONS=20
       - RATE_LIMIT_OPENAI=60
-      
+
       # Bot settings
       - MIN_BONUS=${MIN_BONUS:-80}
       - METRICS_ENABLED=true
       - LOG_WEBHOOK_URL=${LOG_WEBHOOK_URL:-}
-      
+
     depends_on:
       - redis
       - postgres

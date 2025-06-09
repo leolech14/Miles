@@ -352,6 +352,7 @@ async def handle_config(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     current_temp = prefs.get("temperature", "0.7")
     current_max_tokens = prefs.get("max_tokens", "1000")
 
+    # nosec B608 - This is static help text, not SQL
     msg = (
         "🤖 **Current Configuration**\n\n"
         "**OpenAI Settings:**\n"
@@ -621,7 +622,7 @@ async def handle_setupdatetime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -
         if schedule_config.set_update_time(hour):
             if update_schedule():
                 await update.message.reply_text(
-                    "✅ Source update time set to: " + f"{hour}:00"
+                    "✅ Source update time set to: " + f"{hour}:00"  # nosec B608
                 )
             else:
                 await update.message.reply_text("❌ Failed to update scheduler")

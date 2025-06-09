@@ -34,7 +34,7 @@ conn.commit()
 conn.close()
 print('✅ SQLite database created')
 
-# Create DuckDB database  
+# Create DuckDB database
 duck_conn = duckdb.connect('miles_analytics.duckdb')
 duck_conn.execute('CREATE TABLE IF NOT EXISTS test_data (id INTEGER, name VARCHAR)')
 duck_conn.execute('INSERT INTO test_data VALUES (1, \"test\")')
@@ -107,7 +107,7 @@ Create/update your VS Code `settings.json`:
 ## 🚧 Current Blockers
 
 1. **DuckDB MCP**: Package name unclear, requires investigation
-2. **Microsandbox**: Needs global installation and port configuration  
+2. **Microsandbox**: Needs global installation and port configuration
 3. **Settings.json**: Need to locate VS Code settings file path
 
 ## 📋 Manual Tasks for User

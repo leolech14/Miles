@@ -368,7 +368,7 @@ class FunctionRegistry:
         return {
             "success": success,
             "update_time": hour,
-            "message": "Source update time set to: " + f"{hour}:00",
+            "message": "Source update time set to: " + f"{hour}:00",  # nosec B608
         }
 
     def _get_bot_status(self) -> dict[str, Any]:

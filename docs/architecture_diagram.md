@@ -53,30 +53,30 @@ graph TB
     %% Data Flow Connections
     ask_bot --> miles_bonus
     bonus_alert --> miles_bonus
-    
+
     miles_bonus --> scheduler
     miles_bonus --> source_store
     miles_bonus --> chat_store
     miles_bonus --> telegram
     miles_bonus --> openai
-    
+
     scheduler --> plugin_loader
     plugin_loader --> plugin_api
     plugin_loader --> demo_plugin
     plugin_loader --> other_plugins
-    
+
     source_store --> sources_yaml
     source_store --> redis
     chat_store --> redis
-    
+
     config --> miles_bonus
     pyproject --> plugin_entries
     plugin_entries --> plugin_loader
-    
+
     github_ci --> docker
     docker --> fly_deploy
     log_receiver --> github_ci
-    
+
     miles_bonus --> sources
     scheduler --> sources
 
@@ -87,7 +87,7 @@ graph TB
     classDef plugin fill:#e8f5e8
     classDef external fill:#ffebee
     classDef cicd fill:#f1f8e9
-    
+
     class ask_bot,bonus_alert,log_receiver entryPoint
     class miles_bonus,plugin_api,plugin_loader,scheduler,source_store,chat_store core
     class config,sources_yaml,pyproject config
@@ -118,11 +118,11 @@ sequenceDiagram
     S->>R: Cache results
     S->>T: Send notifications
     T-->>U: 🎯 100% bonus found!
-    
+
     Note over S,P: Automated hourly scans
     S->>P: Scheduled execution
     P->>W: Monitor sources
-    
+
     U->>T: /chat How do I optimize?
     T->>AI: Process with context
     AI-->>T: Intelligent response
@@ -138,17 +138,17 @@ gantt
     section Critical Fixes
     Fix CI/CD Pipeline       :done, fix-ci, 2025-06-08, 1d
     Workflow Audit          :audit, after fix-ci, 2d
-    
+
     section Short-term
     Prometheus Metrics      :metrics, 2025-06-10, 5d
     Security Hardening      :security, 2025-06-12, 7d
     Test Coverage          :tests, 2025-06-15, 5d
-    
+
     section Medium-term
     Rate Limiting          :rate, 2025-06-20, 7d
     API Documentation      :docs, 2025-06-25, 5d
     Performance Opt        :perf, 2025-07-01, 10d
-    
+
     section Long-term
     Plugin Marketplace     :marketplace, 2025-07-15, 21d
     Advanced Scheduling    :sched, 2025-08-01, 14d

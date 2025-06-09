@@ -164,7 +164,7 @@ class MyPlugin:
     name = "my-plugin"
     schedule = "@hourly"  # or cron: "0 */6 * * *"
     categories = ["bonus"]
-    
+
     def scrape(self, since: datetime) -> List[Promo]:
         return [
             Promo(

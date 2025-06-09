@@ -200,26 +200,26 @@ def start_health_server():
 
 def main() -> None:
     print("[ask_bot] Starting main function...")
-    
+
     try:
         print("[ask_bot] Initializing OpenAI client...")
         global openai_client
         openai_client = get_openai_client()
         print("[ask_bot] OpenAI client initialized")
-        
+
         print("[ask_bot] Starting health server...")
         start_health_server()  # Start HTTP health server for Fly.io
         print("[ask_bot] Health server started on port 8080")
-        
+
         print("[ask_bot] Checking Telegram token...")
         token = os.getenv("TELEGRAM_BOT_TOKEN")
         if not token:
             raise SystemExit("TELEGRAM_BOT_TOKEN is not set")
         print("[ask_bot] Telegram token found")
-        
+
         print("[ask_bot] Building Telegram application...")
         app = ApplicationBuilder().token(token).post_init(_post_init).build()
-        
+
         print("[ask_bot] Adding command handlers...")
         app.add_handler(CommandHandler("ask", ask))
         app.add_handler(CommandHandler("sources", handle_sources))
@@ -228,7 +228,7 @@ def main() -> None:
         app.add_handler(CommandHandler("update", update))
         app.add_handler(CommandHandler("chat", handle_chat))
         app.add_handler(CommandHandler("end", handle_end))
-        
+
         print("[ask_bot] Starting Telegram bot polling...")
         app.run_polling()
     except Exception as e:

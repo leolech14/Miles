@@ -138,13 +138,18 @@ Remember: You're not just executing commands - you're having a conversation whil
             # Call OpenAI with function calling
             response = await self.openai_client.chat.completions.create(
                 model=model,
-                messages=cast(Any, conversation[-20:]),  # Keep last 20 messages for context
+                messages=cast(
+                    Any, conversation[-20:]
+                ),  # Keep last 20 messages for context
                 temperature=temperature,
                 max_tokens=max_tokens,
-                tools=cast(Any, [
-                    {"type": "function", "function": func}
-                    for func in function_registry.get_function_definitions()
-                ]),
+                tools=cast(
+                    Any,
+                    [
+                        {"type": "function", "function": func}
+                        for func in function_registry.get_function_definitions()
+                    ],
+                ),
                 tool_choice="auto",
             )
 
@@ -189,7 +194,9 @@ Remember: You're not just executing commands - you're having a conversation whil
             function_name = tool_call.function.name
             function_args = json.loads(tool_call.function.arguments)
 
-            logger.info(f"Executing function: {function_name} with args: {function_args}")
+            logger.info(
+                f"Executing function: {function_name} with args: {function_args}"
+            )
 
             # Add the assistant's tool call to conversation
             conversation.append(
@@ -226,7 +233,9 @@ Remember: You're not just executing commands - you're having a conversation whil
         # Get AI response to the function result
         try:
             if not self.openai_client:
-                await self._send_fallback_response(update, function_name, function_result)
+                await self._send_fallback_response(
+                    update, function_name, function_result
+                )
                 return
 
             follow_up_response = await self.openai_client.chat.completions.create(
@@ -339,10 +348,13 @@ Remember: You're not just executing commands - you're having a conversation whil
                 messages=cast(Any, conversation[-10:]),  # Fewer messages for vision
                 temperature=0.7,
                 max_tokens=1500,
-                tools=cast(Any, [
-                    {"type": "function", "function": func}
-                    for func in function_registry.get_function_definitions()
-                ]),
+                tools=cast(
+                    Any,
+                    [
+                        {"type": "function", "function": func}
+                        for func in function_registry.get_function_definitions()
+                    ],
+                ),
                 tool_choice="auto",
             )
 

@@ -33,7 +33,7 @@ set_openai_key() {
     echo -e "${YELLOW}Setting OpenAI API Key...${NC}"
     echo "Paste your OpenAI API key (it will be hidden):"
     read -s KEY
-    
+
     if [[ ! "$KEY" =~ ^sk-proj- ]]; then
         echo -e "${RED}Warning: Key doesn't start with 'sk-proj-', are you sure it's correct? (y/N)${NC}"
         read -n 1 -r
@@ -43,32 +43,32 @@ set_openai_key() {
             exit 1
         fi
     fi
-    
+
     echo "Setting in GitHub..."
     gh secret set OPENAI_API_KEY -b"$KEY"
-    
+
     echo "Setting in Fly.io..."
     fly secrets set OPENAI_API_KEY="$KEY"
-    
+
     echo -e "${GREEN}✅ OPENAI_API_KEY set in both GitHub and Fly.io${NC}"
 }
 
 set_telegram_secrets() {
     echo -e "${YELLOW}Setting Telegram secrets...${NC}"
-    
+
     echo "Enter TELEGRAM_BOT_TOKEN:"
     read -s BOT_TOKEN
-    
+
     echo "Enter TELEGRAM_CHAT_ID:"
     read CHAT_ID
-    
+
     echo "Setting in GitHub..."
     gh secret set TELEGRAM_BOT_TOKEN -b"$BOT_TOKEN"
     gh secret set TELEGRAM_CHAT_ID -b"$CHAT_ID"
-    
+
     echo "Setting in Fly.io..."
     fly secrets set TELEGRAM_BOT_TOKEN="$BOT_TOKEN" TELEGRAM_CHAT_ID="$CHAT_ID"
-    
+
     echo -e "${GREEN}✅ Telegram secrets set in both GitHub and Fly.io${NC}"
 }
 
@@ -77,36 +77,36 @@ set_all_secrets() {
     set_openai_key
     echo ""
     set_telegram_secrets
-    
+
     echo ""
     echo -e "${YELLOW}Setting optional secrets...${NC}"
     echo "Enter MIN_BONUS (default: 80):"
     read MIN_BONUS
     MIN_BONUS=${MIN_BONUS:-80}
-    
+
     echo "Enter REDIS_URL (leave empty for file fallback):"
     read REDIS_URL
     REDIS_URL=${REDIS_URL:-not_set}
-    
+
     gh secret set MIN_BONUS -b"$MIN_BONUS"
     gh secret set REDIS_URL -b"$REDIS_URL"
-    
+
     fly secrets set MIN_BONUS="$MIN_BONUS" REDIS_URL="$REDIS_URL"
-    
+
     echo -e "${GREEN}✅ All secrets configured!${NC}"
 }
 
 check_secrets() {
     echo -e "${YELLOW}Checking secret status...${NC}"
     echo ""
-    
+
     echo "GitHub Secrets:"
     gh secret list | grep -E "(OPENAI_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID)" || echo "No relevant secrets found"
-    
+
     echo ""
     echo "Fly.io Secrets:"
     fly secrets list | grep -E "(OPENAI_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID)" || echo "No relevant secrets found"
-    
+
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"
     echo "1. Deploy: gh workflow run deploy-fly"
@@ -116,7 +116,7 @@ check_secrets() {
 
 main() {
     check_dependencies
-    
+
     case "${1:-}" in
         "set-openai")
             set_openai_key

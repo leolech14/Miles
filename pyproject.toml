@@ -32,23 +32,23 @@ dev = [
     # 🚀 Layer 1: Formatting & Style
     "ruff>=0.8.4",           # Ultra-fast Rust-based linter + formatter
     "black>=24.10.0",        # Deterministic code formatting
-    
-    # 🧪 Layer 2: Static Analysis & Tests  
+
+    # 🧪 Layer 2: Static Analysis & Tests
     "pytest>=8.0.0",        # Testing framework
     "pytest-cov>=5.0.0",    # Coverage reporting
     "pytest-xdist>=3.5.0",  # Parallel test execution
     "pytest-asyncio>=0.24.0", # Async test support
     "mypy>=1.13.0",          # Static type checking
-    
+
     # 🔧 Layer 3: CI & Quality Gates
     "pre-commit>=4.0.0",    # Git hooks for quality gates
     "bandit>=1.7.10",       # Security vulnerability scanner
-    
+
     # 📋 Type Stubs
     "types-PyYAML>=6.0.12",
-    "types-requests>=2.31.0.20240406", 
+    "types-requests>=2.31.0.20240406",
     "types-redis>=4.6.0",
-    
+
     # 🧰 Development Tools
     "pdfplumber",            # PDF processing for tests
     "matplotlib",            # Plotting for analytics
@@ -92,7 +92,7 @@ extend-exclude = [
 # Enable comprehensive rule sets
 select = [
     "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings  
+    "W",   # pycodestyle warnings
     "F",   # pyflakes
     "I",   # isort
     "B",   # flake8-bugbear
@@ -151,7 +151,7 @@ extend-exclude = '''
 minversion = "6.0"
 addopts = [
     "-ra",
-    "--strict-markers", 
+    "--strict-markers",
     "--strict-config",
     "--cov=miles",
     "--cov-report=term-missing",
@@ -170,7 +170,7 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
 ]
 
-# 🔍 MyPy Configuration (Layer 2: Static Analysis) 
+# 🔍 MyPy Configuration (Layer 2: Static Analysis)
 [tool.mypy]
 python_version = "3.11"
 strict = true
@@ -192,7 +192,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [
     "telegram.*",
-    "redis.*", 
+    "redis.*",
     "requests.*",
     "feedparser.*",
     "beautifulsoup4.*",
@@ -204,4 +204,3 @@ ignore_missing_imports = true
 [tool.bandit]
 exclude_dirs = ["tests", "test", ".venv", "venv"]
 skips = ["B101"]  # Skip assert_used test
-
