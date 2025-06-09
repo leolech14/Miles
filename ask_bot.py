@@ -975,7 +975,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 
 def start_health_server() -> None:
-    server = HTTPServer(("0.0.0.0", 8080), HealthHandler)  # Bind to all interfaces for Fly.io
+    server = HTTPServer(("0.0.0.0", 8080), HealthHandler)  # noqa: S104 - Required for Fly.io deployment
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
 
