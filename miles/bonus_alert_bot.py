@@ -46,7 +46,17 @@ STORE = SourceStore()
 
 # ───────────────────────── Redis helpers ─────────────────────────
 _SETTINGS = get_settings()
-_R: Final = redis.from_url(_SETTINGS.redis_url, decode_responses=True)
+
+def _get_redis() -> redis.Redis | None:
+    """Get Redis client if available."""
+    try:
+        if _SETTINGS.redis_url and _SETTINGS.redis_url != "not_set":
+            return redis.from_url(_SETTINGS.redis_url, decode_responses=True)
+    except Exception:
+        pass
+    return None
+
+_R: Final = _get_redis()
 
 KEY_GPT_CHAT = "miles:gpt_mode:{chat_id}"  # per-chat toggle
 KEY_GPT_GLOBAL = "miles:gpt_mode:global"  # global toggle (0 / 1)
@@ -54,6 +64,8 @@ KEY_MAX_TOKENS = "miles:openai:max_tokens"  # int
 
 
 def _chat_enabled(chat_id: int) -> bool:
+    if _R is None:
+        return True  # Default to enabled if Redis unavailable
     global_flag = bool(_R.get(KEY_GPT_GLOBAL) == "1")
     local_flag = bool(_R.get(KEY_GPT_CHAT.format(chat_id=chat_id)) == "1")
     return global_flag or local_flag
@@ -61,6 +73,8 @@ def _chat_enabled(chat_id: int) -> bool:
 
 # ───────────────────────── GPT toggles ──────────────────────────
 async def _toggle_chat(chat_id: int, enabled: bool) -> None:
+    if _R is None:
+        return  # No-op if Redis unavailable
     if enabled:
         _R.set(KEY_GPT_CHAT.format(chat_id=chat_id), "1")
     else:
@@ -86,9 +100,11 @@ async def gpt_global(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if not update.message or not update.message.text or not update.effective_message:
         return
     enable = update.message.text.endswith("on")
-    _R.set(KEY_GPT_GLOBAL, "1" if enable else "0")
+    if _R is not None:
+        _R.set(KEY_GPT_GLOBAL, "1" if enable else "0")
     state = "ON" if enable else "OFF"
-    await update.effective_message.reply_text(f"🌐 GPT GLOBAL mode {state}")
+    redis_status = " (Redis unavailable)" if _R is None else ""
+    await update.effective_message.reply_text(f"🌐 GPT GLOBAL mode {state}{redis_status}")
 
 
 # ───────────────────────── OpenAI settings ──────────────────────
@@ -106,8 +122,10 @@ async def set_max_tokens(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not 100 <= n <= 4096:  # inclusive upper bound fixed
         await update.message.reply_text("Value must be 100-4096.")
         return
-    _R.set(KEY_MAX_TOKENS, str(n))
-    await update.message.reply_text(f"✅ Max tokens set to {n}")
+    if _R is not None:
+        _R.set(KEY_MAX_TOKENS, str(n))
+    redis_status = " (Redis unavailable - using default)" if _R is None else ""
+    await update.message.reply_text(f"✅ Max tokens set to {n}{redis_status}")
 
 
 # ───────────────────────── Diagnostics ──────────────────────────
@@ -127,7 +145,10 @@ async def diag(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
             logger.exception("OpenAI ping failed: %s", exc)
     redis_ok = True
     try:
-        _R.ping()
+        if _R is not None:
+            _R.ping()
+        else:
+            redis_ok = False
     except redis.RedisError:
         redis_ok = False
     await update.message.reply_text(
@@ -240,7 +261,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     try:
         await update.effective_chat.send_action(action="typing")
-        max_tok = int(_R.get(KEY_MAX_TOKENS) or 1000)
+        max_tok = int(_R.get(KEY_MAX_TOKENS) or 1000) if _R else 1000
         answer = await call_gpt(prompt, max_tokens=max_tok)
         await update.effective_message.reply_text(answer, parse_mode=ParseMode.MARKDOWN)
     except Exception:  # noqa: BLE001
@@ -598,7 +619,8 @@ async def config_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
     chat_id = update.effective_chat.id
     gpt_state = "ON ✅" if _chat_enabled(chat_id) else "OFF ❌"
-    max_tok = _R.get(KEY_MAX_TOKENS) or "1000 (default)"
+    max_tok = _R.get(KEY_MAX_TOKENS) if _R else None
+    max_tok = max_tok or "1000 (default)"
     # ⬇︎ build list from dispatcher so it never goes stale
     app: Any = context.application
     lines: List[str] = [
