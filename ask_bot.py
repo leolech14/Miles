@@ -975,7 +975,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 
 def start_health_server() -> None:
-    server = HTTPServer(("127.0.0.1", 8080), HealthHandler)  # Bind to localhost only
+    server = HTTPServer(("0.0.0.0", 8080), HealthHandler)  # Bind to all interfaces for Fly.io
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
 
