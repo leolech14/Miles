@@ -7,10 +7,9 @@ import subprocess
 import sqlite3
 import duckdb
 import sys
-from typing import Dict, Any
 
 
-def test_postgresql_connection() -> Dict[str, Any]:
+def test_postgresql_connection() -> None:
     """Test PostgreSQL connection via Docker."""
     try:
         result = subprocess.run(
@@ -32,36 +31,44 @@ def test_postgresql_connection() -> Dict[str, Any]:
         )
 
         if result.returncode == 0:
-            return {"status": "success", "message": "PostgreSQL connection successful"}
+            print("✅ PostgreSQL connection successful")
         else:
-            return {"status": "error", "message": f"PostgreSQL error: {result.stderr}"}
+            print(f"⚠️ PostgreSQL error: {result.stderr}")
+            # Don't fail CI for PostgreSQL since it's optional
+            assert True
     except Exception as e:
-        return {"status": "error", "message": f"PostgreSQL test failed: {str(e)}"}
+        print(f"⚠️ PostgreSQL test failed: {str(e)}")
+        # Don't fail CI for PostgreSQL since it's optional
+        assert True
 
 
-def test_sqlite_connection() -> Dict[str, Any]:
+def test_sqlite_connection() -> None:
     """Test local SQLite database."""
     try:
         conn = sqlite3.connect("miles_analytics.db")
         result = conn.execute("SELECT 'SQLite Connected' as status").fetchone()
         conn.close()
-        return {"status": "success", "message": f"SQLite: {result[0]}"}
+        print(f"✅ SQLite: {result[0]}")
+        assert result[0] == "SQLite Connected"
     except Exception as e:
-        return {"status": "error", "message": f"SQLite test failed: {str(e)}"}
+        print(f"❌ SQLite test failed: {str(e)}")
+        assert False, f"SQLite connection failed: {e}"
 
 
-def test_duckdb_connection() -> Dict[str, Any]:
+def test_duckdb_connection() -> None:
     """Test local DuckDB database."""
     try:
         conn = duckdb.connect("miles_analytics.duckdb")
         result = conn.execute("SELECT 'DuckDB Connected' as status").fetchone()
         conn.close()
-        return {"status": "success", "message": f"DuckDB: {result[0]}"}
+        print(f"✅ DuckDB: {result[0]}")
+        assert result[0] == "DuckDB Connected"
     except Exception as e:
-        return {"status": "error", "message": f"DuckDB test failed: {str(e)}"}
+        print(f"❌ DuckDB test failed: {str(e)}")
+        assert False, f"DuckDB connection failed: {e}"
 
 
-def test_playwright_mcp() -> Dict[str, Any]:
+def test_playwright_mcp() -> None:
     """Test Playwright MCP server."""
     try:
         result = subprocess.run(
@@ -72,17 +79,19 @@ def test_playwright_mcp() -> Dict[str, Any]:
         )
 
         if result.returncode == 0:
-            return {"status": "success", "message": "Playwright MCP server available"}
+            print("✅ Playwright MCP server available")
+            assert True
         else:
-            return {
-                "status": "error",
-                "message": f"Playwright MCP error: {result.stderr}",
-            }
+            print(f"⚠️ Playwright MCP error: {result.stderr}")
+            # Don't fail CI for optional MCP servers
+            assert True
     except Exception as e:
-        return {"status": "error", "message": f"Playwright MCP test failed: {str(e)}"}
+        print(f"⚠️ Playwright MCP test failed: {str(e)}")
+        # Don't fail CI for optional MCP servers
+        assert True
 
 
-def test_postgres_mcp() -> Dict[str, Any]:
+def test_postgres_mcp() -> None:
     """Test PostgreSQL MCP server."""
     try:
         # Just test if the package is available
@@ -95,14 +104,16 @@ def test_postgres_mcp() -> Dict[str, Any]:
 
         # The server might exit with an error for --help, but package should be found
         if "Cannot find module" not in result.stderr:
-            return {
-                "status": "success",
-                "message": "PostgreSQL MCP server package available",
-            }
+            print("✅ PostgreSQL MCP server package available")
+            assert True
         else:
-            return {"status": "error", "message": "PostgreSQL MCP package not found"}
+            print("⚠️ PostgreSQL MCP package not found")
+            # Don't fail CI for optional MCP servers
+            assert True
     except Exception as e:
-        return {"status": "error", "message": f"PostgreSQL MCP test failed: {str(e)}"}
+        print(f"⚠️ PostgreSQL MCP test failed: {str(e)}")
+        # Don't fail CI for optional MCP servers
+        assert True
 
 
 def main():

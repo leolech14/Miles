@@ -13,13 +13,16 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-# Set test environment variables
-os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"
-os.environ["TELEGRAM_CHAT_ID"] = "test_chat"
-os.environ["OPENAI_API_KEY"] = "test_openai_key"
-os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+# Setup environment variables at startup
+if "TELEGRAM_BOT_TOKEN" not in os.environ:
+    os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"
+if "TELEGRAM_CHAT_ID" not in os.environ:
+    os.environ["TELEGRAM_CHAT_ID"] = "test_chat"
+if "OPENAI_API_KEY" not in os.environ:
+    os.environ["OPENAI_API_KEY"] = "test_openai_key"
+if "REDIS_URL" not in os.environ:
+    os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 
-# Import Miles modules after setting env vars
 from miles.plugin_loader import discover_plugins
 from miles.promo_store import get_promo_store
 from miles.source_store import SourceStore
@@ -168,7 +171,11 @@ async def test_notification() -> Dict[str, Any]:
 
         # Note: In real scenario this would send Telegram message
         # For testing, we just return success
-        return {"promo": test_promo, "notification_sent": True, "status": "success"}
+        return {
+            "promo": test_promo,
+            "notification_sent": True,
+            "status": "success",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
