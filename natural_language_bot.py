@@ -235,7 +235,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 def start_health_server() -> None:
     """Start health check server on port 8080."""
-    server = HTTPServer(("0.0.0.0", 8080), HealthHandler)
+    server = HTTPServer(("127.0.0.1", 8080), HealthHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     logger.info("Health server started on :8080")
 

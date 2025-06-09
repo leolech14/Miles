@@ -16,7 +16,7 @@ BASE_URL = "http://localhost:8080"
 
 
 def make_request(
-    method: str, endpoint: str, data: dict[str, Any] = None
+    method: str, endpoint: str, data: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     """Make HTTP request and return JSON response"""
     url = f"{BASE_URL}{endpoint}"
@@ -24,9 +24,9 @@ def make_request(
     print(f"🌐 {method} {endpoint}")
 
     if method == "GET":
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
     elif method == "POST":
-        response = requests.post(url, json=data)
+        response = requests.post(url, json=data, timeout=10)
     else:
         raise ValueError(f"Unsupported method: {method}")
 
@@ -41,7 +41,7 @@ def make_request(
         return {"error": response.text}
 
 
-def run_api_tests():
+def run_api_tests() -> None:
     """Run a series of API tests for Keploy to record"""
 
     print("🧪 Running Miles Bot API Tests for Keploy Recording\n")

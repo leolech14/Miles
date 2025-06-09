@@ -2,7 +2,6 @@
 
 import re
 from datetime import datetime
-from typing import List
 
 import requests
 from bs4 import BeautifulSoup

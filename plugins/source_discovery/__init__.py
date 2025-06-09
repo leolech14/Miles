@@ -1,7 +1,6 @@
 """Source Discovery Plugin - AI-powered mileage source finder."""
 
 from datetime import datetime
-from typing import List
 from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
 import requests

@@ -13,7 +13,7 @@ def load_data() -> dict[str, list[int]]:
     hist_dir = Path("history")
     for csv_file in hist_dir.glob("*.csv"):
         with open(csv_file, newline="") as f:
-            for program, date, pct in csv.reader(f):
+            for program, date, _pct in csv.reader(f):
                 try:
                     month = int(date.split("-")[1])
                 except (IndexError, ValueError):
