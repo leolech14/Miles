@@ -115,39 +115,49 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Run the scan and reply with any found promotions."""
     from miles.metrics import telegram_commands_total, promos_found_total
     from miles.rate_limiter import get_rate_limiter, RateLimitType, RateLimitExceeded
-    
+
     try:
         if not update.message or not update.effective_chat:
             return
-            
+
         # Apply rate limiting
-        user_id = str(update.effective_user.id) if update.effective_user else "anonymous"
+        user_id = (
+            str(update.effective_user.id) if update.effective_user else "anonymous"
+        )
         limiter = get_rate_limiter()
-        
+
         try:
             async with limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id):
-                async with limiter.limit(RateLimitType.SOURCE_SCAN, user_id, cost=3):  # Manual scan is expensive
-                    await update.message.reply_text("🔍 Scanning for promotions ≥80%...")
+                async with limiter.limit(
+                    RateLimitType.SOURCE_SCAN, user_id, cost=3
+                ):  # Manual scan is expensive
+                    await update.message.reply_text(
+                        "🔍 Scanning for promotions ≥80%..."
+                    )
                     seen: set[str] = set()
                     alerts = bot.scan_programs(seen)
-                    
+
                     # Record metrics
-                    promos_found_total.labels("manual_scan", "telegram", "all").inc(len(alerts))
-                    
+                    promos_found_total.labels("manual_scan", "telegram", "all").inc(
+                        len(alerts)
+                    )
+
                     if not alerts:
-                        await update.message.reply_text("✅ Scan complete. No new promotions found.")
+                        await update.message.reply_text(
+                            "✅ Scan complete. No new promotions found."
+                        )
                     else:
                         await update.message.reply_text(
                             f"✅ Scan complete. Found {len(alerts)} promotions!"
                         )
-        
+
         except RateLimitExceeded as e:
             await update.message.reply_text(
                 f"⏱️ Rate limit exceeded. Please wait {e.retry_after} seconds before trying again."
             )
             telegram_commands_total.labels("ask", "rate_limited").inc()
             return
-        
+
         telegram_commands_total.labels("ask", "success").inc()
     except Exception as e:
         telegram_commands_total.labels("ask", "error").inc()
@@ -244,7 +254,7 @@ async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     from miles.rate_limiter import get_rate_limiter, RateLimitType, RateLimitExceeded
-    
+
     # Check if OpenAI is available
     if not openai_client:
         if not update.message:
@@ -256,14 +266,16 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     if not update.message or not update.message.text or not update.effective_user:
         return
-    
+
     # Apply rate limiting for chat commands
     user_id = str(update.effective_user.id)
     limiter = get_rate_limiter()
-    
+
     try:
         async with limiter.limit(RateLimitType.TELEGRAM_COMMAND, user_id):
-            async with limiter.limit(RateLimitType.OPENAI_REQUEST, user_id, cost=2):  # AI requests are expensive
+            async with limiter.limit(
+                RateLimitType.OPENAI_REQUEST, user_id, cost=2
+            ):  # AI requests are expensive
                 text = update.message.text
                 parts = text.split(maxsplit=1)
                 if len(parts) < 2:
@@ -286,8 +298,12 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 model = memory.get_user_preference(int(user_id), "model") or os.getenv(
                     "OPENAI_MODEL", "gpt-4o-mini"
                 )
-                temperature = float(memory.get_user_preference(int(user_id), "temperature") or "0.7")
-                max_tokens = int(memory.get_user_preference(int(user_id), "max_tokens") or "1000")
+                temperature = float(
+                    memory.get_user_preference(int(user_id), "temperature") or "0.7"
+                )
+                max_tokens = int(
+                    memory.get_user_preference(int(user_id), "max_tokens") or "1000"
+                )
 
                 resp = await asyncio.to_thread(
                     openai_client.chat.completions.create,
@@ -299,12 +315,16 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 )
 
                 if not resp.choices or not resp.choices[0].message:
-                    await update.message.reply_text("❌ Invalid response from OpenAI API.")
+                    await update.message.reply_text(
+                        "❌ Invalid response from OpenAI API."
+                    )
                     return
 
                 reply = resp.choices[0].message.content
                 if not reply:
-                    await update.message.reply_text("❌ Empty response from OpenAI API.")
+                    await update.message.reply_text(
+                        "❌ Empty response from OpenAI API."
+                    )
                     return
 
                 user_msgs.append({"role": "assistant", "content": reply})
@@ -746,18 +766,20 @@ async def handle_debug(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(status_msg, parse_mode="Markdown")
 
 
-async def handle_rate_limit_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_rate_limit_status(
+    update: Update, ctx: ContextTypes.DEFAULT_TYPE
+) -> None:
     """Show current rate limit status for the user."""
     if not update.message or not update.effective_user:
         return
-    
+
     from miles.rate_limiter import get_rate_limiter, RateLimitType
-    
+
     user_id = str(update.effective_user.id)
     limiter = get_rate_limiter()
-    
+
     status_msg = "⏱️ **Rate Limit Status**\n\n"
-    
+
     # Check different rate limit types
     rate_limit_types = [
         (RateLimitType.TELEGRAM_COMMAND, "Telegram Commands"),
@@ -765,7 +787,7 @@ async def handle_rate_limit_status(update: Update, ctx: ContextTypes.DEFAULT_TYP
         (RateLimitType.SOURCE_SCAN, "Source Scanning"),
         (RateLimitType.USER_OPERATION, "General Operations"),
     ]
-    
+
     for limit_type, display_name in rate_limit_types:
         try:
             stats = await limiter.get_stats(limit_type, user_id)
@@ -773,7 +795,7 @@ async def handle_rate_limit_status(update: Update, ctx: ContextTypes.DEFAULT_TYP
                 remaining = stats.get("remaining", "Unknown")
                 window = stats.get("window_seconds", "Unknown")
                 burst = stats.get("burst_capacity", "Unknown")
-                
+
                 status_icon = "✅" if stats.get("currently_allowed", True) else "⚠️"
                 status_msg += f"{status_icon} **{display_name}**\n"
                 status_msg += f"  • Remaining: {remaining}\n"
@@ -781,9 +803,9 @@ async def handle_rate_limit_status(update: Update, ctx: ContextTypes.DEFAULT_TYP
                 status_msg += f"  • Burst: {burst}\n\n"
         except Exception as e:
             status_msg += f"❌ **{display_name}**: Error - {str(e)}\n\n"
-    
+
     status_msg += "💡 *Rate limits prevent spam and ensure fair usage*"
-    
+
     await update.message.reply_text(status_msg, parse_mode="Markdown")
 
 
@@ -799,7 +821,7 @@ async def handle_ai_brain(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
 
     if not update.message or not update.message.text or not update.effective_chat:
         return
-    
+
     text = update.message.text
     parts = text.split(maxsplit=1)
     if len(parts) < 2:
@@ -933,24 +955,24 @@ class HealthHandler(BaseHTTPRequestHandler):
         else:
             # Default to health check for root path
             self._handle_health()
-    
+
     def _handle_health(self) -> None:
         self.send_response(200)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
         self.wfile.write(b"OK")
-    
+
     def _handle_metrics(self) -> None:
         try:
             from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
             from miles.metrics import get_metrics_registry, record_memory_usage
-            
+
             # Update dynamic metrics
             record_memory_usage()
-            
+
             # Generate metrics
             metrics_data = generate_latest(get_metrics_registry())
-            
+
             self.send_response(200)
             self.send_header("Content-Type", CONTENT_TYPE_LATEST)
             self.end_headers()

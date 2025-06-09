@@ -18,11 +18,11 @@ def test_update_sources(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     def mock_store() -> Mock:
         store = Mock(spec=SourceStore)
         store.all.return_value = ["https://example.com"]
-        
+
         def mock_add(url: str) -> bool:
             added_sources.append(url)
             return True
-        
+
         store.add.side_effect = mock_add
         return store
 

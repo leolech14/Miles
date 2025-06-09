@@ -118,7 +118,9 @@ async def diag(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     async with aiohttp.ClientSession() as sess:
         try:
             timeout = aiohttp.ClientTimeout(total=8)
-            async with sess.get("https://api.openai.com/v1/models", timeout=timeout) as r:
+            async with sess.get(
+                "https://api.openai.com/v1/models", timeout=timeout
+            ) as r:
                 ok = r.status == 200
         except Exception as exc:  # noqa: BLE001
             ok = False

@@ -52,9 +52,10 @@ def setup_scheduler() -> None:
     _scheduler.start()
     jobs_count = len(_scheduler.get_jobs())
     logger.info("Scheduler started with %s job(s)", jobs_count)
-    
+
     # Record metrics
     from miles.metrics import record_scheduler_jobs
+
     record_scheduler_jobs(jobs_count)
 
 

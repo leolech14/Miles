@@ -58,7 +58,7 @@ class SourceStore:
                 time_operation,
                 count_operation,
             )
-            
+
             with time_operation(redis_response_duration, "smembers"):
                 with count_operation(redis_operations_total, "smembers"):
                     sources = self.r.smembers("sources")
