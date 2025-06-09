@@ -1,9 +1,11 @@
 import fakeredis
 import redis
+from pathlib import Path
+from _pytest.monkeypatch import MonkeyPatch
 from miles.source_store import SourceStore
 
 
-def test_add_remove(tmp_path, monkeypatch):
+def test_add_remove(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     yaml_path = tmp_path / "src.yaml"
     monkeypatch.setattr(redis.Redis, "from_url", fakeredis.FakeRedis.from_url)
     # Use different DB number to avoid test collision

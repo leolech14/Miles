@@ -95,7 +95,7 @@ def check_environment_variables() -> None:
 # Environment variables will be checked in main
 
 
-def get_openai_client():
+def get_openai_client() -> OpenAI:
     """Get OpenAI client, checking for API key"""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or api_key == "not_set":
@@ -116,7 +116,8 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.effective_chat:
         return
     await update.message.reply_text("🔍 Scanning for promotions ≥80%...")
-    alerts = await asyncio.to_thread(bot.run_scan, str(update.effective_chat.id))
+    seen: set[str] = set()
+    alerts = bot.scan_programs(seen)
     if not alerts:
         await update.message.reply_text("✅ Scan complete. No new promotions found.")
         return
@@ -127,6 +128,8 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
     lst = store.all()
     if not lst:
         await update.message.reply_text("⚠️  No sources configured.")
@@ -142,6 +145,8 @@ async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def handle_addsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.message.text:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text("Usage: /addsrc <url>")
@@ -154,6 +159,8 @@ async def handle_addsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def handle_rmsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.message.text:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text("Usage: /rmsrc <index|url>")
@@ -179,7 +186,7 @@ async def handle_rmsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f"Error: {str(e)}")
 
 
-async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Search for new sources using AI-powered discovery."""
     if not update.message:
         return
@@ -187,7 +194,7 @@ async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Try AI-powered discovery first
     try:
-        added = await asyncio.to_thread(ai_update_sources)
+        added = ai_update_sources()
         if added:
             msg = f"🧠 AI discovered {len(added)} high-quality sources:\n" + "\n".join(
                 added
@@ -197,7 +204,7 @@ async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         # Fallback to basic search
         await update.message.reply_text("⚠️ AI search failed, using basic method...")
-        added = await asyncio.to_thread(update_sources)
+        added = update_sources()
         if added:
             msg = "📋 Basic search found new sources:\n" + "\n".join(added)
         else:
@@ -209,11 +216,16 @@ async def update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     # Check if OpenAI is available
     if not openai_client:
+        if not update.message:
+            return
         await update.message.reply_text(
             "❌ Chat feature is not available. OpenAI API key not configured."
         )
         return
 
+    if not update.message or not update.message.text or not update.effective_user:
+        return
+    
     text = update.message.text
     parts = text.split(maxsplit=1)
     if len(parts) < 2:
@@ -269,12 +281,16 @@ async def handle_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def handle_end(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_user:
+        return
     memory.clear(update.effective_user.id)
     await update.message.reply_text("\u2702\ufe0f  Chat ended.")
 
 
 async def handle_config(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show current configuration and available options"""
+    if not update.message or not update.effective_user:
+        return
     user_id = update.effective_user.id
     prefs = memory.get_all_user_preferences(user_id)
 
@@ -328,6 +344,8 @@ async def handle_config(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def handle_setmodel(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the OpenAI model for chat"""
+    if not update.message or not update.message.text or not update.effective_user:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text(
@@ -351,6 +369,8 @@ async def handle_setmodel(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
 
 async def handle_settemp(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the temperature for AI responses"""
+    if not update.message or not update.message.text or not update.effective_user:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text("Usage: /settemp <0.0-2.0>")
@@ -373,6 +393,8 @@ async def handle_settemp(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
 
 async def handle_setmaxtokens(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the max tokens for AI responses"""
+    if not update.message or not update.message.text or not update.effective_user:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text("Usage: /setmaxtokens <number>")
@@ -395,6 +417,8 @@ async def handle_setmaxtokens(update: Update, ctx: ContextTypes.DEFAULT_TYPE) ->
 
 async def handle_import(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Import sources from a URL or file"""
+    if not update.message or not update.message.text:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text("Usage: /import <url_or_text_with_urls>")
@@ -421,6 +445,8 @@ async def handle_import(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Export all sources as a text list"""
+    if not update.message:
+        return
     sources = store.all()
     if not sources:
         await update.message.reply_text("No sources to export")
@@ -431,7 +457,7 @@ async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         # Split into chunks
         chunks = []
         lines = sources
-        current_chunk = []
+        current_chunk: list[str] = []
         current_length = 0
 
         for line in lines:
@@ -460,13 +486,19 @@ async def handle_export(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def handle_schedule(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show current schedule and allow modifications"""
+    if not update.message:
+        return
     config = get_current_schedule()
 
-    scan_times = ", ".join(f"{h}:00" for h in config["scan_hours"])
+    scan_hours = config.get("scan_hours", [])
+    if isinstance(scan_hours, list):
+        scan_times = ", ".join(f"{h}:00" for h in scan_hours)
+    else:
+        scan_times = "Not configured"
 
     current_schedule = f"""⏰ **Current Schedule** (São Paulo time)
 
-**Source Updates:** {config["update_hour"]}:00 daily
+**Source Updates:** {config.get("update_hour", 7)}:00 daily
 **Promotion Scans:** {scan_times} daily
 
 To modify schedule times, use:
@@ -480,6 +512,8 @@ Note: Times are in 24-hour format, São Paulo timezone"""
 
 async def handle_setscantime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the promotion scan times"""
+    if not update.message or not update.message.text:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text(
@@ -518,6 +552,8 @@ async def handle_setscantime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> 
 
 async def handle_setupdatetime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Set the source update time"""
+    if not update.message or not update.message.text:
+        return
     parts = update.message.text.split(maxsplit=1)
     if len(parts) < 2:
         await update.message.reply_text(
@@ -551,12 +587,14 @@ async def handle_setupdatetime(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -
 async def handle_image_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle image messages for multimodal chat"""
     if not openai_client:
+        if not update.message:
+            return
         await update.message.reply_text(
             "❌ Chat feature is not available. OpenAI API key not configured."
         )
         return
 
-    if not update.message.photo:
+    if not update.message or not update.message.photo or not update.effective_user:
         return
 
     user_id = update.effective_user.id
@@ -631,6 +669,8 @@ async def handle_image_chat(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> N
 
 async def handle_debug(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Debug command to check bot status"""
+    if not update.message or not update.effective_user:
+        return
     import os
 
     status_msg = "🔧 **Bot Debug Status**\n\n"
@@ -668,11 +708,16 @@ async def handle_debug(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 async def handle_ai_brain(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """AI Brain command - let AI control the bot intelligently"""
     if not openai_client:
+        if not update.message:
+            return
         await update.message.reply_text(
             "❌ AI Brain not available. OpenAI API key not configured."
         )
         return
 
+    if not update.message or not update.message.text or not update.effective_chat:
+        return
+    
     text = update.message.text
     parts = text.split(maxsplit=1)
     if len(parts) < 2:
@@ -749,7 +794,7 @@ When users ask you to do something, provide a detailed action plan and execute i
             await update.message.reply_text(
                 "🧠 AI Brain initiating intelligent source discovery..."
             )
-            added = await asyncio.to_thread(ai_update_sources)
+            added = ai_update_sources()
             if added:
                 msg = (
                     f"🧠 **Brain Discovery Results:**\n\nFound {len(added)} high-quality sources:\n"
@@ -763,9 +808,8 @@ When users ask you to do something, provide a detailed action plan and execute i
             await update.message.reply_text(
                 "🧠 AI Brain running intelligent promotion scan..."
             )
-            alerts = await asyncio.to_thread(
-                bot.run_scan, str(update.effective_chat.id)
-            )
+            seen: set[str] = set()
+            alerts = bot.scan_programs(seen)
             brain_analysis = f"""🧠 **Brain Scan Analysis:**
 
 📈 **Results:** {len(alerts)} promotions found
@@ -799,13 +843,13 @@ async def _post_init(app: object) -> None:
 
 
 class HealthHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
+    def do_GET(self) -> None:
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b"OK")
 
 
-def start_health_server():
+def start_health_server() -> None:
     server = HTTPServer(("0.0.0.0", 8080), HealthHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
@@ -844,7 +888,7 @@ def main() -> None:
         app.add_handler(CommandHandler("sources", handle_sources))
         app.add_handler(CommandHandler("addsrc", handle_addsrc))
         app.add_handler(CommandHandler("rmsrc", handle_rmsrc))
-        app.add_handler(CommandHandler("update", update))
+        app.add_handler(CommandHandler("update", handle_update))
         app.add_handler(CommandHandler("chat", handle_chat))
         app.add_handler(CommandHandler("end", handle_end))
 

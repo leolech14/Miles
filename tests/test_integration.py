@@ -2,23 +2,24 @@ import fakeredis
 import redis
 from pathlib import Path
 import sys
+from _pytest.monkeypatch import MonkeyPatch
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from miles.bonus_alert_bot import scan_programs
 from miles.source_store import SourceStore
 
 
-def test_end_to_end_scan(tmp_path, monkeypatch):
+def test_end_to_end_scan(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     """Test complete scan workflow without external dependencies"""
     # Mock Redis
     monkeypatch.setattr(redis.Redis, "from_url", fakeredis.FakeRedis.from_url)
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/1")
 
     # Mock external calls
-    def mock_fetch(url):
+    def mock_fetch(url: str) -> str:
         return '<article><a href="https://example.com">Transferência 100% bônus</a></article>'
 
-    def mock_telegram(msg, chat_id=None):
+    def mock_telegram(msg: str, chat_id: str | None = None) -> None:
         pass  # Don't actually send messages
 
     # Create test sources file
@@ -41,7 +42,7 @@ def test_end_to_end_scan(tmp_path, monkeypatch):
     monkeypatch.setattr(bot, "send_telegram", mock_telegram)
 
     # Run the scan
-    seen = set()
+    seen: set[str] = set()
     alerts = scan_programs(seen)
 
     # Verify we found the alert
@@ -50,7 +51,7 @@ def test_end_to_end_scan(tmp_path, monkeypatch):
     assert "test.com" in alerts[0][1]  # source name
 
 
-def test_source_store_integration(tmp_path, monkeypatch):
+def test_source_store_integration(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     """Test SourceStore with Redis integration"""
     monkeypatch.setattr(redis.Redis, "from_url", fakeredis.FakeRedis.from_url)
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/1")
