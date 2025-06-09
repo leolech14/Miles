@@ -1,11 +1,13 @@
 # 🌿 Miles Repository Branching Strategy
 
 ## Overview
+
 We use a **simplified GitHub Flow** with `main` as the single source of truth for maximum simplicity and efficiency.
 
 ## Branch Structure
 
 ### `main` - Production Branch ✅
+
 - **Purpose**: Production-ready code
 - **Protection**: Full CI/CD checks required
 - **Deployment**: Auto-deploys to Fly.io on merge
@@ -14,6 +16,7 @@ We use a **simplified GitHub Flow** with `main` as the single source of truth fo
 ## Development Workflow
 
 ### 1. Feature Development
+
 ```bash
 # Start new feature
 git checkout main
@@ -27,6 +30,7 @@ git push origin feature/amazing-new-feature
 ```
 
 ### 2. Pull Request Process
+
 ```bash
 # Create PR: feature/amazing-new-feature → main
 # Required checks:
@@ -39,6 +43,7 @@ git push origin feature/amazing-new-feature
 ```
 
 ### 3. Merge and Deploy
+
 ```bash
 # After PR approval and checks pass:
 # → Rebase and merge to main
@@ -48,13 +53,13 @@ git push origin feature/amazing-new-feature
 
 ## Branch Naming Conventions
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| 🚀 Feature | `feature/description` | `feature/prometheus-metrics` |
-| 🐛 Bug Fix | `fix/description` | `fix/rate-limit-error` |
-| 🚨 Hotfix | `hotfix/description` | `hotfix/security-patch` |
-| 📚 Docs | `docs/description` | `docs/api-documentation` |
-| 🧪 Experiment | `experiment/description` | `experiment/new-ai-model` |
+| Type          | Pattern                  | Example                      |
+| ------------- | ------------------------ | ---------------------------- |
+| 🚀 Feature    | `feature/description`    | `feature/prometheus-metrics` |
+| 🐛 Bug Fix    | `fix/description`        | `fix/rate-limit-error`       |
+| 🚨 Hotfix     | `hotfix/description`     | `hotfix/security-patch`      |
+| 📚 Docs       | `docs/description`       | `docs/api-documentation`     |
+| 🧪 Experiment | `experiment/description` | `experiment/new-ai-model`    |
 
 ## Commit Message Format
 
@@ -71,6 +76,7 @@ security: patch OpenAI API key validation
 ## Emergency Procedures
 
 ### Hotfix Process
+
 ```bash
 # For critical production issues:
 git checkout main
@@ -85,6 +91,7 @@ git push origin hotfix/critical-security-fix
 ```
 
 ### Rollback Process
+
 ```bash
 # If deployment fails:
 git revert <commit-hash>
@@ -95,6 +102,7 @@ git push origin main
 ## Why This Strategy?
 
 ### ✅ Advantages
+
 - **Simple**: Single branch to track
 - **Fast**: Direct path to production
 - **Reliable**: All code tested before merge
@@ -102,6 +110,7 @@ git push origin main
 - **Automated**: CI/CD handles everything
 
 ### 🚫 What We Avoid
+
 - Complex branch hierarchies
 - Merge conflicts from long-lived branches
 - Manual deployment steps
@@ -110,12 +119,15 @@ git push origin main
 ## CI/CD Integration
 
 ### Automatic Triggers
+
 - **On PR**: Run all tests and checks
 - **On merge to main**: Deploy to production
 - **On security alert**: Create issue automatically
 
 ### Status Checks
+
 All PRs must pass:
+
 1. `pytest` - Test suite
 2. `mypy --strict` - Type checking
 3. `ruff check` - Code linting
@@ -126,18 +138,21 @@ All PRs must pass:
 ## Best Practices
 
 ### For Contributors
+
 - Keep feature branches short-lived (< 1 week)
 - Write descriptive commit messages
 - Include tests with new features
 - Update documentation as needed
 
 ### For Reviewers
+
 - Check code quality and security
 - Verify tests cover new functionality
 - Ensure documentation is updated
 - Test locally if needed
 
 ### For Maintainers
+
 - Monitor deployment health
 - Review security alerts promptly
 - Keep dependencies updated

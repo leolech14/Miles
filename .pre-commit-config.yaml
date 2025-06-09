@@ -1,24 +1,24 @@
 repos:
   # 🚀 Layer 1: Formatting & Style (Ultra-fast Rust-based)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4  # Updated to latest
+    rev: v0.8.4 # Updated to latest
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]  # Auto-fix issues
-      - id: ruff-format  # Ruff's built-in formatter
+        args: [--fix, --exit-non-zero-on-fix] # Auto-fix issues
+      - id: ruff-format # Ruff's built-in formatter
 
   - repo: https://github.com/psf/black
-    rev: 24.10.0  # Updated to latest
+    rev: 24.10.0 # Updated to latest
     hooks:
       - id: black
-        args: ["--check", "."]
+        args: [--check, .]
 
   # 🧪 Layer 2: Static Analysis & Tests
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0  # Updated to latest
+    rev: v1.13.0 # Updated to latest
     hooks:
       - id: mypy
-        args: ["--strict", "miles", "--ignore-missing-imports"]
+        args: [--strict, miles, --ignore-missing-imports]
         pass_filenames: false
         additional_dependencies:
           - types-requests>=2.31.0.20240406
@@ -29,19 +29,23 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-      - id: check-yaml  # Validate YAML syntax
-      - id: check-json  # Validate JSON syntax
-      - id: check-toml  # Validate TOML syntax
-      - id: check-merge-conflict  # Check for merge conflict markers
-      - id: trailing-whitespace  # Remove trailing whitespace
-      - id: end-of-file-fixer  # Ensure files end with newline
+      - id: check-yaml # Validate YAML syntax
+      - id: check-json # Validate JSON syntax
+      - id: check-toml # Validate TOML syntax
+      - id: check-merge-conflict # Check for merge conflict markers
+      - id: trailing-whitespace # Remove trailing whitespace
+      - id: end-of-file-fixer # Ensure files end with newline
 
   # 🛡️ Security & Quality (run only on push)
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.10
     hooks:
       - id: bandit
-        args: ["-r", ".", "-i", "--exclude=tests/,test/,node_modules/,.venv/,venv/"]
+        args:
+          - -r
+          - .
+          - -i
+          - --exclude=tests/,test/,node_modules/,.venv/,venv/
         pass_filenames: false
         stages: [pre-push]
 
@@ -53,4 +57,4 @@ repos:
         entry: pytest -q --tb=short
         language: system
         pass_filenames: false
-        stages: [pre-push]  # Only run on push, not every commit
+        stages: [pre-push] # Only run on push, not every commit

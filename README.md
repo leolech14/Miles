@@ -77,38 +77,38 @@ Edit `sources.yaml` to change which pages are scanned.
 
 ### Runtime commands
 
-| Command | Action |
-|---------|--------|
-| `/ask` | Run an immediate promotion scan |
-| `/sources` | List current sources |
-| `/addsrc <url>` | Add a new source URL |
-| `/rmsrc <id_or_url>` | Remove a source by index or full URL |
-| `/update` | AI-powered search for new sources |
-| `/chat <text>` | Talk with the integrated AI assistant |
-| `/brain <command>` | Let AI control and optimize the bot |
-| `/config` | Show current configuration and available commands |
-| `/setmodel <model>` | Change AI model (gpt-4o-mini, gpt-4o, etc.) |
-| `/settemp <0.0-2.0>` | Set AI response temperature |
-| `/setmaxtokens <100-4000>` | Set maximum response length |
-| `/import <urls>` | Import sources from URLs in text |
-| `/export` | Export all sources as text |
-| `/schedule` | View current scan/update schedule |
-| `/setscantime <hours>` | Set promotion scan times (e.g., 8,20) |
-| `/setupdatetime <hour>` | Set source update time (e.g., 7) |
-| `/end` | Clear chat context |
-| `/debug` | Show bot status and diagnostics |
+| Command                    | Action                                            |
+| -------------------------- | ------------------------------------------------- |
+| `/ask`                     | Run an immediate promotion scan                   |
+| `/sources`                 | List current sources                              |
+| `/addsrc <url>`            | Add a new source URL                              |
+| `/rmsrc <id_or_url>`       | Remove a source by index or full URL              |
+| `/update`                  | AI-powered search for new sources                 |
+| `/chat <text>`             | Talk with the integrated AI assistant             |
+| `/brain <command>`         | Let AI control and optimize the bot               |
+| `/config`                  | Show current configuration and available commands |
+| `/setmodel <model>`        | Change AI model (gpt-4o-mini, gpt-4o, etc.)       |
+| `/settemp <0.0-2.0>`       | Set AI response temperature                       |
+| `/setmaxtokens <100-4000>` | Set maximum response length                       |
+| `/import <urls>`           | Import sources from URLs in text                  |
+| `/export`                  | Export all sources as text                        |
+| `/schedule`                | View current scan/update schedule                 |
+| `/setscantime <hours>`     | Set promotion scan times (e.g., 8,20)             |
+| `/setupdatetime <hour>`    | Set source update time (e.g., 7)                  |
+| `/end`                     | Clear chat context                                |
+| `/debug`                   | Show bot status and diagnostics                   |
 
 ## AI Brain Commands
 
 The `/brain` command gives AI autonomous control over the bot:
 
-| Brain Command | Action |
-|---------------|--------|
-| `/brain analyze` | AI analyzes bot performance and suggests improvements |
-| `/brain discover` | AI intelligently discovers new mileage sources |
-| `/brain scan` | AI runs and analyzes promotion scans |
-| `/brain optimize` | AI optimizes settings and configuration |
-| `/brain <question>` | Ask AI to control any aspect of the bot |
+| Brain Command       | Action                                                |
+| ------------------- | ----------------------------------------------------- |
+| `/brain analyze`    | AI analyzes bot performance and suggests improvements |
+| `/brain discover`   | AI intelligently discovers new mileage sources        |
+| `/brain scan`       | AI runs and analyzes promotion scans                  |
+| `/brain optimize`   | AI optimizes settings and configuration               |
+| `/brain <question>` | Ask AI to control any aspect of the bot               |
 
 ## ChatGPT mode
 
@@ -120,32 +120,40 @@ context. Set `OPENAI_API_KEY` to enable this feature.
 
 **Personalization**: Configure your AI experience with `/setmodel`, `/settemp`, and `/setmaxtokens` commands. Each user's preferences are stored individually.
 
-## Example sources
+> **Note:**
+> The commands, proper nouns, and non-English words in this document (such as `/addsrc`, `/setmodel`, `pytest`, `flyctl`, and names of Brazilian blogs) are intentional and should not be treated as spelling errors by spell checkers or linters.
 
-- **Melhores Destinos**<br>
+- **Melhores Destinos**
   Portal brasileiro que publica diariamente promoções de bônus de transferência (Livelo, Esfera, Iupp etc.) e envia alertas imediatos via app, push, Telegram e newsletter.
-  > "Se tem promoção de transferência bonificada na área, tem condição boa para comprar milhas mais baratas..."<br>
-  Fonte: <https://www.melhoresdestinos.com.br/milhas/pontos-dinheiro-bonus-livelo-smiles-maio25>
 
-- **Passageiro de Primeira**<br>
+  > "Se tem promoção de transferência bonificada na área, tem condição boa para comprar milhas mais baratas..."
+  > Fonte: <https://www.melhoresdestinos.com.br/milhas/pontos-dinheiro-bonus-livelo-smiles-maio25>
+
+- **Passageiro de Primeira**
   Blog especializado em programas de fidelidade; divulga transferências bonificadas em tempo real, traz análises detalhadas e oferece grupos de Telegram, WhatsApp e notificações por aplicativo.
-  > "Relembramos as melhores promoções de transferências bonificadas de pontos que ocorreram em 2024"<br>
-  Fonte: <https://passageirodeprimeira.com/retrospectiva-promocoes-de-transferencias-bonificadas-2024/>
 
-- **Pontos pra Voar**<br>
+  > "Relembramos as melhores promoções de transferências bonificadas de pontos que ocorreram em 2024"
+  > Fonte: <https://passageirodeprimeira.com/retrospectiva-promocoes-de-transferencias-bonificadas-2024/>
+
+- **Pontos pra Voar**
   Site que cobre promoções de milhas, cartões e hotéis; publica tabelas comparativas de bônus de transferência e avisa assinantes por newsletter, Telegram ou feed RSS.
-  > "Receba até 80% de bônus na transferência de pontos do Itaú para o Azul Fidelidade"<br>
-  Fonte: <https://pontospravoar.com/receba-ate-80-porcento-bonus-transferencia-pontos-itau-azul-fidelidade/>
 
-- **Mestre das Milhas**<br>
+  > "Receba até 80% de bônus na transferência de pontos do Itaú para o Azul Fidelidade"
+  > Fonte: <https://pontospravoar.com/receba-ate-80-porcento-bonus-transferencia-pontos-itau-azul-fidelidade/>
+
+- **Mestre das Milhas**
   Portal focado em maximizar milhas; posta rapidamente campanhas de bônus de transferência, calcula custos e mantém canal no Telegram para alertas instantâneos.
-  > "Livelo oferece até 110% de bônus na transferência de pontos para a Smiles"<br>
-  Fonte: <https://mestredasmilhas.com/livelo-oferece-ate-110-de-bonus-na-transferencia-de-pontos-para-a-smiles/>
 
-- **Guia do Milheiro**<br>
+  > "Livelo oferece até 110% de bônus na transferência de pontos para a Smiles"
+  > Fonte: <https://mestredasmilhas.com/livelo-oferece-ate-110-de-bonus-na-transferencia-de-pontos-para-a-smiles/>
+
+- **Guia do Milheiro**
   Agregador brasileiro que reúne promoções de transferência bonificada, explica regras, mostra passo a passo e envia avisos por newsletter ou Telegram.
+  > "Azul Fidelidade oferece até 80% de bônus na transferência de pontos – veja como participar"
+  > Fonte: <https://guiadomilheiro.com.br/azul-fidelidade-oferece-ate-80-de-bonus-na-transferencia-de-pontos-veja-como-participar/>
+  > Agregador brasileiro que reúne promoções de transferência bonificada, explica regras, mostra passo a passo e envia avisos por newsletter ou Telegram.
   > "Azul Fidelidade oferece até 80% de bônus na transferência de pontos – veja como participar"<br>
-  Fonte: <https://guiadomilheiro.com.br/azul-fidelidade-oferece-ate-80-de-bonus-na-transferencia-de-pontos-veja-como-participar/>
+  > Fonte: <https://guiadomilheiro.com.br/azul-fidelidade-oferece-ate-80-de-bonus-na-transferencia-de-pontos-veja-como-participar/>
 
 ## Plugin System
 
@@ -227,6 +235,7 @@ Copy the HTTPS URL (e.g., `https://abc123.ngrok.io`) and set it as the `LOG_WEBH
 ### Webhook payload format
 
 The receiver expects JSON payloads with:
+
 ```json
 {
   "run_id": "github-run-id-or-local-test",
@@ -255,24 +264,29 @@ When your ngrok URL changes, update the `LOG_WEBHOOK_URL` secret in GitHub repos
 
 ### Chat command not working
 
-If you get "❌ Chat feature is not available. OpenAI API key not configured":
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+```
 
-1. **Local development**: Set environment variable
-   ```bash
-   export OPENAI_API_KEY="your-api-key-here"
-   ```
+````bash
+export OPENAI_API_KEY="your-api-key-here"
+```bash
+fly secrets set OPENAI_API_KEY="your-api-key-here"
+fly deploy
+````
 
-2. **Fly.io deployment**: Set secret and redeploy
-   ```bash
-   fly secrets set OPENAI_API_KEY="your-api-key-here"
-   fly deploy
-   ```
+fly secrets set OPENAI_API_KEY="your-api-key-here"
+fly deploy
 
-3. **Verify deployment**: Check logs
-   ```bash
-   fly logs
-   ```
-   Look for: `[ask_bot] OpenAI client initialized`
+```bash
+fly logs
+```
+
+Look for: `[ask_bot] OpenAI client initialized`
+fly logs
+
+````
+Look for: `[ask_bot] OpenAI client initialized`
 
 ### Secret Management
 
@@ -286,13 +300,13 @@ If you get "❌ Chat feature is not available. OpenAI API key not configured":
 
 # Check secret status
 ./scripts/set_secrets.sh check
-```
-
-**Common issues**:
 - **"zombie value" errors**: Secret contains "not_set" - use script above to fix
 - **Deploy failures**: Missing OPENAI_API_KEY - CI will fail fast with clear error
 - **Silent AI failures**: Runtime validation catches invalid keys at startup
-
+- **"zombie value" errors**: Secret contains "not_set" - use script above to fix
+- **Deploy failures**: Missing OPENAI_API_KEY - CI will fail fast with clear error
+- Dependencies are not pinned - consider using `pip freeze > requirements.lock` for production
+- Bot token is in environment variables - ensure proper secret management in production
 **Security notes**:
 - Dependencies are not pinned - consider using `pip freeze > requirements.lock` for production
 - Bot token is in environment variables - ensure proper secret management in production
@@ -304,4 +318,4 @@ Run the checks before committing:
 ```bash
 pytest -q
 mypy --strict miles/
-```
+````
