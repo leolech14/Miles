@@ -4,5 +4,16 @@
 
   // Allow the language server to find packages inside the *src* directory
   // (adjust the relative path if your layout is different).
-  "python.analysis.extraPaths": ["./src"]
+  "python.analysis.extraPaths": [
+    "./src"
+  ],
+  "python.testing.unittestArgs": [
+    "-v",
+    "-s",
+    ".",
+    "-p",
+    "*test.py"
+  ],
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": true
 }
