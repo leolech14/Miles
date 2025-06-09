@@ -12,7 +12,7 @@ from miles.schedule_config import ScheduleConfig
 from miles.source_search import update_sources
 from miles.ai_source_discovery import ai_update_sources
 from miles.bonus_alert_bot import run_scan
-from miles.plugins.plugin import register_with_scheduler
+from miles.plugin_loader import register_with_scheduler
 
 """
 AsyncIO-based cron scheduler.  Import `setup_scheduler()` during application
@@ -95,6 +95,6 @@ if __name__ == "__main__":
 
     async def _main() -> None:
         # `to_thread` returns a coroutine; awaiting removes the mypy warning.
-        await asyncio.to_thread(run_scan)
+        await asyncio.to_thread(lambda: asyncio.run(run_scan()))
 
     asyncio.run(_main())

@@ -20,8 +20,9 @@ logger = logging.getLogger("miles.promo_store")
 class PromoStore:
     """Handles storage and deduplication of promotion objects."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         settings = get_settings()
+        self._redis: Optional[redis.Redis] = None  # type: ignore[type-arg]
         try:
             self._redis = redis.from_url(settings.redis_url, decode_responses=True)
             self._redis.ping()  # Test connection
@@ -63,24 +64,24 @@ class PromoStore:
 
     def _is_seen(self, promo_hash: str) -> bool:
         """True if promo_id is already persisted."""
-        if self._use_redis:
-            return bool(self._redis.sismember("miles:seen_promos", promo_hash))  # type: ignore
+        if self._use_redis and self._redis:
+            return bool(self._redis.sismember("miles:seen_promos", promo_hash))
         else:
             return promo_hash in self._memory_store
 
     def _mark_seen(self, promo_hash: str) -> None:
         """Mark promo as seen."""
-        if self._use_redis:
+        if self._use_redis and self._redis:
             # Store with 30-day expiry to prevent infinite growth
-            self._redis.sadd("miles:seen_promos", promo_hash)  # type: ignore
-            self._redis.expire("miles:seen_promos", 30 * 24 * 3600)  # type: ignore
+            self._redis.sadd("miles:seen_promos", promo_hash)
+            self._redis.expire("miles:seen_promos", 30 * 24 * 3600)
         else:
             self._memory_store.add(promo_hash)
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, object]:
         """Get storage statistics."""
-        if self._use_redis:
-            total_seen = self._redis.scard("miles:seen_promos")  # type: ignore
+        if self._use_redis and self._redis:
+            total_seen = self._redis.scard("miles:seen_promos")
             return {"backend": "redis", "total_seen": total_seen, "connected": True}
         else:
             return {
@@ -93,7 +94,7 @@ class PromoStore:
 class PromoNotifier:
     """Handles notifications for new promotions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.min_bonus = int(os.getenv("MIN_BONUS", "80"))
 
     def notify_promos(self, promos: List[Promo]) -> None:
