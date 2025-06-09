@@ -51,7 +51,20 @@ class SourceStore:
                 return sorted(data)
             except FileNotFoundError:
                 return []
-        sources = self.r.smembers("sources")
+        try:
+            from miles.metrics import (
+                redis_operations_total,
+                redis_response_duration,
+                time_operation,
+                count_operation,
+            )
+            
+            with time_operation(redis_response_duration, "smembers"):
+                with count_operation(redis_operations_total, "smembers"):
+                    sources = self.r.smembers("sources")
+        except ImportError:
+            # Metrics not available, run without instrumentation
+            sources = self.r.smembers("sources")
         # smembers returns a set of strings when decode_responses=True
         return sorted(sources)
 

@@ -113,18 +113,31 @@ store = SourceStore()
 
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Run the scan and reply with any found promotions."""
-    if not update.message or not update.effective_chat:
-        return
-    await update.message.reply_text("🔍 Scanning for promotions ≥80%...")
-    seen: set[str] = set()
-    alerts = bot.scan_programs(seen)
-    if not alerts:
-        await update.message.reply_text("✅ Scan complete. No new promotions found.")
-        return
-    else:
-        await update.message.reply_text(
-            f"✅ Scan complete. Found {len(alerts)} promotions!"
-        )
+    from miles.metrics import telegram_commands_total, promos_found_total
+    
+    try:
+        if not update.message or not update.effective_chat:
+            return
+        await update.message.reply_text("🔍 Scanning for promotions ≥80%...")
+        seen: set[str] = set()
+        alerts = bot.scan_programs(seen)
+        
+        # Record metrics
+        promos_found_total.labels("manual_scan", "telegram", "all").inc(len(alerts))
+        
+        if not alerts:
+            await update.message.reply_text("✅ Scan complete. No new promotions found.")
+        else:
+            await update.message.reply_text(
+                f"✅ Scan complete. Found {len(alerts)} promotions!"
+            )
+        
+        telegram_commands_total.labels("ask", "success").inc()
+    except Exception as e:
+        telegram_commands_total.labels("ask", "error").inc()
+        if update.message:
+            await update.message.reply_text(f"❌ Error during scan: {str(e)}")
+        raise
 
 
 async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -844,9 +857,40 @@ async def _post_init(app: object) -> None:
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
+        if self.path == "/metrics":
+            self._handle_metrics()
+        elif self.path == "/health":
+            self._handle_health()
+        else:
+            # Default to health check for root path
+            self._handle_health()
+    
+    def _handle_health(self) -> None:
         self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
         self.end_headers()
         self.wfile.write(b"OK")
+    
+    def _handle_metrics(self) -> None:
+        try:
+            from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+            from miles.metrics import get_metrics_registry, record_memory_usage
+            
+            # Update dynamic metrics
+            record_memory_usage()
+            
+            # Generate metrics
+            metrics_data = generate_latest(get_metrics_registry())
+            
+            self.send_response(200)
+            self.send_header("Content-Type", CONTENT_TYPE_LATEST)
+            self.end_headers()
+            self.wfile.write(metrics_data)
+        except Exception as e:
+            self.send_response(500)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(f"Error generating metrics: {str(e)}".encode())
 
 
 def start_health_server() -> None:

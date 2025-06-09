@@ -50,7 +50,12 @@ def setup_scheduler() -> None:
     register_with_scheduler(_scheduler)
 
     _scheduler.start()
-    logger.info("Scheduler started with %s job(s)", len(_scheduler.get_jobs()))
+    jobs_count = len(_scheduler.get_jobs())
+    logger.info("Scheduler started with %s job(s)", jobs_count)
+    
+    # Record metrics
+    from miles.metrics import record_scheduler_jobs
+    record_scheduler_jobs(jobs_count)
 
 
 def update_schedule() -> bool:

@@ -20,6 +20,7 @@ dependencies = [
     "openai>=1.27,<2.0",
     "fastapi[all]",
     "uvicorn",
+    "prometheus-client>=0.20.0",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +40,7 @@ dev = [
     "types-redis",
     "matplotlib",
     "fakeredis>=2.0",
+    "psutil>=5.9.0",
 ]
 
 [project.scripts]
