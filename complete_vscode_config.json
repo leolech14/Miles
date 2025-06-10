@@ -1,0 +1,28 @@
+{
+  "amp.mcpServers": {
+    "telegram": {
+      "command": "npx",
+      "args": ["-y", "@chaindead/telegram-mcp"],
+      "env": {
+        "TG_APP_ID": "22444301",
+        "TG_API_HASH": "dc9ef3af0fd90487e05f1953edc8d496"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:password@localhost:5432/miles_analytics"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/lech/Miles"
+      ]
+    }
+  }
+}

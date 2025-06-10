@@ -69,7 +69,7 @@ def test_openai_connection() -> bool:
 
         print("❌ OpenAI API client not initialized")
         return False
-    except Exception as e:  # noqa: BLE001, try-except-pass
+    except Exception as e:
         print(f"❌ OpenAI API connection failed: {e}")
         return False
 
@@ -84,7 +84,7 @@ def test_function_registry() -> bool:
         for func in functions:
             print(f"   • {func['name']}: {func['description'][:60]}...")
         return True
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"❌ Function registry test failed: {e}")
         return False
 
@@ -110,7 +110,7 @@ def test_basic_functions() -> bool:
             print(f"✅ Source listing working ({total} sources)")
 
         return True
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"❌ Function execution test failed: {e}")
         return False
 

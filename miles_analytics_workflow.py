@@ -10,7 +10,7 @@ from typing import Any
 import duckdb
 
 
-def export_data_to_csv() -> str:
+def export_data_to_csv() -> tuple[str, str]:
     """Export DuckDB data to CSV for analysis."""
     print("📤 Exporting data to CSV...")
 
@@ -210,7 +210,7 @@ def create_insights_report(analysis: dict[str, Any]) -> str:
     return report_file
 
 
-def main():
+def main() -> bool:
     """Run the complete analytics workflow."""
     print("🚀 MILES ANALYTICS WORKFLOW STARTING...")
     print("=" * 50)

@@ -14,6 +14,8 @@ help: ## Show this help message
 	@echo "  make quick          # Fast quality check before commit"
 	@echo "  make quality        # Full quality gates (what CI runs)"
 	@echo "  make fix            # Auto-fix formatting and linting issues"
+	@echo "  make backtest       # Comprehensive deployment readiness test"
+	@echo "  make pre-deploy     # Complete pre-deployment validation"
 
 # 📦 Installation and setup
 install: ## Install development dependencies
@@ -134,6 +136,36 @@ ci-simulation: ## Simulate CI pipeline locally
 	make docker-build
 	make docker-build-natural
 	@echo "✅ CI simulation complete!"
+
+# 🔄 Deployment Backtesting
+backtest: ## Run comprehensive deployment readiness backtest
+	@echo "🔄 Running deployment backtest..."
+	python scripts/backtest_deployment.py
+
+backtest-quick: ## Run quick deployment readiness check
+	@echo "🚀 Running quick backtest..."
+	python scripts/backtest_deployment.py --quiet
+
+backtest-monitor: ## Start continuous monitoring (Ctrl+C to stop)
+	@echo "🔄 Starting continuous monitoring..."
+	python scripts/continuous_monitor.py
+
+backtest-monitor-fast: ## Start fast continuous monitoring (1 min intervals)
+	@echo "🚀 Starting fast monitoring..."
+	python scripts/continuous_monitor.py --interval 60
+
+# 🎯 Pre-deployment validation
+pre-deploy: backtest docker-build docker-build-natural ## Complete pre-deployment validation
+	@echo "🎯 Pre-deployment validation complete!"
+	@echo "✅ Ready for deployment!"
+
+# 🔧 Setup enhanced pre-commit hooks
+setup-hooks: ## Setup enhanced pre-commit hooks
+	@echo "🔧 Setting up enhanced pre-commit hooks..."
+	cp .pre-commit-config-enhanced.yaml .pre-commit-config.yaml
+	pre-commit install
+	pre-commit install --hook-type pre-push
+	@echo "✅ Enhanced hooks installed!"
 
 # 🔄 Pre-commit operations
 pre-commit-run: ## Run pre-commit hooks on all files

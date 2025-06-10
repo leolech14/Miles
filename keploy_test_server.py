@@ -15,11 +15,11 @@ from pydantic import BaseModel
 
 # Setup environment variables at startup
 if "TELEGRAM_BOT_TOKEN" not in os.environ:
-    os.environ["TELEGRAM_BOT_TOKEN"] = "test_token"  # Test environment only
+    os.environ["TELEGRAM_BOT_TOKEN"] = "test_token_for_keploy"  # Test environment only
 if "TELEGRAM_CHAT_ID" not in os.environ:
-    os.environ["TELEGRAM_CHAT_ID"] = "test_chat"
+    os.environ["TELEGRAM_CHAT_ID"] = "test_chat_id"
 if "OPENAI_API_KEY" not in os.environ:
-    os.environ["OPENAI_API_KEY"] = "test_openai_key"
+    os.environ["OPENAI_API_KEY"] = "test_key_placeholder"
 if "REDIS_URL" not in os.environ:
     os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 
@@ -192,4 +192,4 @@ if __name__ == "__main__":
     print("  POST /test-notification - Test notifications")
     print("\n🔍 Starting server on http://localhost:8080")
 
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")  # noqa: S104

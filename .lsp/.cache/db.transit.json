@@ -1,1 +1,23 @@
-["^ ","~:classpath",["~#set",[]],"~:project-hash","","~:project-root","/Users/lech/Miles/Miles-1","~:kondo-config-hash","3d7abd9a5af2ef31c86b7877df70472f312cf819a9f0eb183f1c658eea41c5cf","~:dependency-scheme","jar","~:analysis",null,"~:analysis-checksums",["^ "],"~:project-analysis-type","~:project-and-full-dependencies","~:version",12,"~:stubs-generation-namespaces",["^1",[]]]
+[
+  "^ ",
+  "~:classpath",
+  ["~#set", []],
+  "~:project-hash",
+  "",
+  "~:project-root",
+  "/Users/lech/Miles",
+  "~:kondo-config-hash",
+  "87f4957d236cce0d09fb3d5a30eec4cfa279c68c21aaa5452d05f78165e10c44",
+  "~:dependency-scheme",
+  "jar",
+  "~:analysis",
+  null,
+  "~:analysis-checksums",
+  ["^ "],
+  "~:project-analysis-type",
+  "~:project-and-full-dependencies",
+  "~:version",
+  12,
+  "~:stubs-generation-namespaces",
+  ["^1", []]
+]

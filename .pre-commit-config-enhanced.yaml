@@ -1,0 +1,69 @@
+# Enhanced pre-commit configuration for deployment readiness
+repos:
+  # 🚀 Fast quality checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  # 🔍 Python code quality
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # 🛡️ Security scanning
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        args: [-r, miles/, -ll]
+        pass_filenames: false
+
+  # 📋 Type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        args: [--ignore-missing-imports]
+        additional_dependencies: [types-all]
+
+  # 🧪 Quick test validation
+  - repo: local
+    hooks:
+      - id: quick-test
+        name: Quick Test Suite
+        entry: python -m pytest tests/test_integration.py -v --tb=short
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: import-test
+        name: Import Test
+        entry: python -c "import miles; print('✅ Imports successful')"
+        language: system
+        pass_filenames: false
+
+      - id: config-validation
+        name: Configuration Validation
+        entry: python -c "import yaml; yaml.safe_load(open('sources.yaml')); print('✅ Config valid')"
+        language: system
+        pass_filenames: false
+
+  # 🐳 Docker validation (only on push)
+  - repo: local
+    hooks:
+      - id: docker-build-test
+        name: Docker Build Test
+        entry: bash -c "docker build -t miles-bot-test . && echo '✅ Docker build successful'"
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

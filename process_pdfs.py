@@ -89,7 +89,7 @@ def process_all_pdfs() -> dict[str, Any]:
     }
 
 
-def main():
+def main() -> None:
     """Main function to process all PDFs."""
     print("🔄 Processing PDFs in all_pdfs/ directory...")
 
