@@ -25,10 +25,11 @@ jobs:
         run: |
           curl -L https://fly.io/install.sh | sh
           echo "$HOME/.fly/bin" >> "$GITHUB_PATH"
-      - name: "Create app if needed"
+      - name: "Destroy and recreate app"
         run: |
-          fly apps create miles --generate-name=false || echo "App already exists"
-          fly ips allocate-v4 --app miles || echo "IP already allocated"
+          fly apps destroy miles --yes || echo "App didn't exist"
+          fly apps create miles --generate-name=false
+          fly ips allocate-v4 --app miles
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: "Push secrets to Fly"
