@@ -74,10 +74,10 @@ tg_history("@YourMilesBotUsername", 3)
 
 ## 🎯 SUCCESS INDICATORS
 
-✅ Green dot next to "telegram" in MCP servers  
-✅ `tg_me()` returns your account info  
-✅ `tg_dialogs()` shows your chats  
-✅ `tg_send()` successfully messages your bot  
+✅ Green dot next to "telegram" in MCP servers
+✅ `tg_me()` returns your account info
+✅ `tg_dialogs()` shows your chats
+✅ `tg_send()` successfully messages your bot
 ✅ Bot responds with comprehensive help information
 
 ## 🚀 What You'll Achieve
@@ -91,9 +91,9 @@ Once complete, you'll have **professional Telegram development tools** integrate
 
 ## 📱 Your Live Miles Bot
 
-**Status**: ✅ **LIVE** on Fly.io  
-**Features**: AI brain, natural language, 50+ source monitoring  
-**Region**: iad (US East)  
+**Status**: ✅ **LIVE** on Fly.io
+**Features**: AI brain, natural language, 50+ source monitoring
+**Region**: iad (US East)
 **Ready for**: Professional MCP integration!
 
 ---

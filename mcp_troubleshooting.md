@@ -22,7 +22,7 @@
 
 ### 🔴 "Invalid API credentials"
 
-**Symptoms**: 401 errors or authentication failures  
+**Symptoms**: 401 errors or authentication failures
 **Solutions**:
 
 1. Double-check App ID: `22444301`
@@ -50,6 +50,6 @@
 ## Success Indicators
 
 ✅ Green dot next to "telegram" in MCP servers
-✅ `tg_me()` returns your account info  
+✅ `tg_me()` returns your account info
 ✅ `tg_dialogs()` shows your chats
 ✅ `tg_send()` successfully sends messages
