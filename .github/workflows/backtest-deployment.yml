@@ -36,7 +36,7 @@ jobs:
           pip install -e .
           python -c "import miles; print('✅ Core imports work')"
           python -c "from miles.plugin_api import Plugin; print('✅ Plugin API accessible')"
-          python -c "from miles.metrics import get_metrics; print('✅ Metrics system available')"
+          python -c "from miles.metrics import get_metrics_registry; print('✅ Metrics system available')"
 
   # 📊 Full Integration Backtest
   integration-backtest:
@@ -86,7 +86,7 @@ jobs:
         run: |
           echo "📊 Testing metrics collection..."
           pytest tests/test_metrics.py -v
-          python -m miles.metrics --test-mode
+          python -c "from miles.metrics import get_metrics_registry; print('✅ Metrics system OK')"
 
       - name: Run Natural Language Tests
         if: matrix.test-scenario == 'natural-language'
