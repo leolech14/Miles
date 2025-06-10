@@ -110,6 +110,42 @@ memory = ChatMemory()
 store = SourceStore()
 
 
+async def handle_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show available bot commands and their descriptions."""
+    if not update.message:
+        return
+
+    help_text = """🤖 **Milhas Bot - Comandos Disponíveis**
+
+🔍 **Promoções:**
+• `/ask` - Escanear promoções ≥80%
+• `/sources` - Ver fontes monitoradas
+
+📊 **Gerenciamento:**
+• `/addsrc <url>` - Adicionar nova fonte
+• `/rmsrc <índice>` - Remover fonte
+• `/update` - Atualizar lista de fontes
+
+🤖 **IA & Chat:**
+• `/chat <mensagem>` - Conversar com IA
+• `/ai` - Ativar/desativar modo IA
+• `/end` - Limpar histórico de chat
+
+⚙️ **Configuração:**
+• `/config` - Ver configurações atuais
+• `/setmodel <modelo>` - Mudar modelo IA
+• `/settemp <0.0-2.0>` - Ajustar temperatura
+• `/setmaxtokens <número>` - Limite de tokens
+
+📋 **Outros:**
+• `/help` - Este menu de ajuda
+• `/schedule` - Ver horários programados
+
+💡 **Dica:** Use `/ask` para encontrar as melhores promoções de milhas brasileiras!"""
+
+    await update.message.reply_text(help_text, parse_mode="Markdown")
+
+
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Run the scan and reply with any found promotions."""
     from miles.metrics import promos_found_total, telegram_commands_total
@@ -144,9 +180,21 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         "✅ Scan complete. No new promotions found."
                     )
                 else:
+                    # Show the promotions found
                     await update.message.reply_text(
                         f"✅ Scan complete. Found {len(alerts)} promotions!"
                     )
+
+                    # Send each promotion as a separate message
+                    for alert in alerts[:10]:  # Limit to first 10 to avoid spam
+                        await update.message.reply_text(
+                            alert, parse_mode="HTML", disable_web_page_preview=False
+                        )
+
+                    if len(alerts) > 10:
+                        await update.message.reply_text(
+                            f"... e mais {len(alerts) - 10} promoções encontradas!"
+                        )
 
         except RateLimitExceeded as e:
             await update.message.reply_text(
@@ -170,6 +218,18 @@ async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
     if not lst:
         await update.message.reply_text("⚠️  No sources configured.")
         return
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_lst = []
+    for url in lst:
+        if url not in seen:
+            seen.add(url)
+            unique_lst.append(url)
+
+    lst = unique_lst
+    total_sources = len(lst)
+
     if len(lst) > 50:
         extra = len(lst) - 50
         lst = lst[:50]
@@ -177,7 +237,12 @@ async def handle_sources(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         lines.append(f"… and {extra} more")
     else:
         lines = [f"{i + 1}. {u}" for i, u in enumerate(lst)]
-    await update.message.reply_text("\n".join(lines))
+
+    # Add header with source count and last update info
+    header = f"📊 **{total_sources} fontes monitoradas:**\n"
+    response = header + "\n".join(lines)
+
+    await update.message.reply_text(response, parse_mode="Markdown")
 
 
 async def handle_addsrc(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1009,6 +1074,8 @@ def main() -> None:
         app = ApplicationBuilder().token(token).post_init(_post_init).build()
 
         print("[ask_bot] Adding command handlers...")
+        app.add_handler(CommandHandler("help", handle_help))
+        app.add_handler(CommandHandler("start", handle_help))  # /start also shows help
         app.add_handler(CommandHandler("ask", ask))
         app.add_handler(CommandHandler("sources", handle_sources))
         app.add_handler(CommandHandler("addsrc", handle_addsrc))
