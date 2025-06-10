@@ -6,7 +6,7 @@ This file is used to trigger CI/CD deployments.
 **Trigger**: Fly.io authentication reset and reconfigured  
 **Status**: Ready for deployment with fresh API token ✨
 
-## Changes Applied:
+## Changes Applied
 
 - ✅ Fresh Fly.io CLI installation
 - ✅ Complete authentication reset
