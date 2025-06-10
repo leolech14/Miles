@@ -192,4 +192,4 @@ if __name__ == "__main__":
     print("  POST /test-notification - Test notifications")
     print("\n🔍 Starting server on http://localhost:8080")
 
-    uvicorn.run(app, host="127.0.0.1", port=8080, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
