@@ -27,9 +27,9 @@ jobs:
           echo "$HOME/.fly/bin" >> "$GITHUB_PATH"
       - name: "Destroy and recreate app"
         run: |
-          fly apps destroy miles --yes || echo "App didn't exist"
-          fly apps create miles --generate-name=false
-          fly ips allocate-v4 --app miles
+          fly apps destroy miles-redis --yes || echo "App didn't exist"
+          fly apps create miles-redis --generate-name=false
+          fly ips allocate-v4 --app miles-redis
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: "Push secrets to Fly"
@@ -56,12 +56,12 @@ jobs:
         run: fly machine status -i 080137ef300d58 || true
       - name: Show app info
         run: |
-          fly apps list | grep miles || echo "App not found in list"
-          fly status --app miles || echo "Status check failed"
-          fly ips list --app miles || echo "No IPs allocated"
+          fly apps list | grep miles-redis || echo "App not found in list"
+          fly status --app miles-redis || echo "Status check failed"
+          fly ips list --app miles-redis || echo "No IPs allocated"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: Retrieve Machine Logs
-        run: fly logs --app miles || true
+        run: fly logs --app miles-redis || true
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
